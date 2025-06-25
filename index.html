@@ -4,109 +4,276 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>editIQ - Professional Video Editor</title>
-    <meta name="description" content="editIQ - A powerful, browser-based video editor with drag-and-drop functionality, real-time editing, and export capabilities. Built by Noskam Amkahc.">
-    <meta name="keywords" content="video editor, browser video editor, online video editing, editIQ">
-    <meta name="author" content="Noskam Amkahc">
+    <meta name="description" content="editIQ - A powerful, browser-based video editor with drag-and-drop functionality, animations, and professional editing tools.">
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="dark-theme">
+<body>
     <!-- Header -->
     <header class="header">
         <div class="header-left">
             <h1 class="logo">editIQ</h1>
-            <span class="subtitle">by Noskam Amkahc</span>
+            <span class="tagline">by Noskam Amkahc</span>
         </div>
         <div class="header-center">
-            <button class="btn btn-primary" id="playBtn">▶️ Play</button>
-            <button class="btn btn-secondary" id="pauseBtn">⏸️ Pause</button>
-            <button class="btn btn-secondary" id="stopBtn">⏹️ Stop</button>
+            <button class="btn btn-primary" id="exportBtn">
+                <span class="icon">📤</span>
+                Export
+            </button>
         </div>
         <div class="header-right">
-            <button class="btn btn-icon" id="themeToggle">🌙</button>
-            <button class="btn btn-primary" id="exportBtn">📤 Export</button>
+            <button class="btn btn-secondary" id="saveBtn">Save Project</button>
+            <button class="btn btn-secondary" id="loadBtn">Load Project</button>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="main-content">
+    <!-- Main Container -->
+    <div class="main-container">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-section">
-                <h3>Media Library</h3>
+                <h3>Media</h3>
                 <div class="media-upload">
-                    <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
-                    <button class="btn btn-secondary" id="uploadBtn">📁 Upload Files</button>
+                    <input type="file" id="mediaUpload" accept="image/*,video/*" multiple style="display: none;">
+                    <button class="upload-btn" onclick="document.getElementById('mediaUpload').click()">
+                        <span class="icon">📁</span>
+                        Upload Media
+                    </button>
                 </div>
-                <div class="media-grid" id="mediaGrid">
-                    <!-- Uploaded media will appear here -->
-                </div>
+                <div class="media-library" id="mediaLibrary"></div>
             </div>
 
             <div class="sidebar-section">
                 <h3>Elements</h3>
                 <div class="elements-grid">
-                    <div class="element-item" data-type="text">📝 Text</div>
-                    <div class="element-item" data-type="shape">🔷 Shape</div>
-                    <div class="element-item" data-type="emoji">😀 Emoji</div>
-                    <div class="element-item" data-type="gif">🎞️ GIF</div>
+                    <div class="element-item" data-type="text">
+                        <span class="icon">📝</span>
+                        Text
+                    </div>
+                    <div class="element-item" data-type="shape">
+                        <span class="icon">🔷</span>
+                        Shapes
+                    </div>
+                    <div class="element-item" data-type="emoji">
+                        <span class="icon">😀</span>
+                        Emoji
+                    </div>
+                    <div class="element-item" data-type="sticker">
+                        <span class="icon">⭐</span>
+                        Stickers
+                    </div>
                 </div>
             </div>
 
             <div class="sidebar-section">
-                <h3>Properties</h3>
-                <div class="properties-panel" id="propertiesPanel">
-                    <p>Select an element to edit properties</p>
+                <h3>Animations</h3>
+                <div class="animation-presets" id="animationPresets">
+                    <div class="animation-item" data-animation="fadeIn">Fade In</div>
+                    <div class="animation-item" data-animation="slideInLeft">Slide Left</div>
+                    <div class="animation-item" data-animation="slideInRight">Slide Right</div>
+                    <div class="animation-item" data-animation="slideInUp">Slide Up</div>
+                    <div class="animation-item" data-animation="slideInDown">Slide Down</div>
+                    <div class="animation-item" data-animation="zoomIn">Zoom In</div>
+                    <div class="animation-item" data-animation="zoomOut">Zoom Out</div>
+                    <div class="animation-item" data-animation="rotateIn">Rotate In</div>
+                    <div class="animation-item" data-animation="bounce">Bounce</div>
+                    <div class="animation-item" data-animation="pulse">Pulse</div>
+                    <div class="animation-item" data-animation="shake">Shake</div>
+                    <div class="animation-item" data-animation="flip">Flip</div>
+                    <div class="animation-item" data-animation="typewriter">Typewriter</div>
+                    <div class="animation-item" data-animation="glow">Glow</div>
+                    <div class="animation-item" data-animation="float">Float</div>
                 </div>
             </div>
         </aside>
 
         <!-- Canvas Area -->
-        <section class="canvas-container">
+        <main class="canvas-container">
             <div class="canvas-toolbar">
-                <button class="btn btn-icon" id="zoomOut">🔍-</button>
-                <span id="zoomLevel">100%</span>
-                <button class="btn btn-icon" id="zoomIn">🔍+</button>
-                <button class="btn btn-secondary" id="resetZoom">Reset</button>
+                <button class="tool-btn active" data-tool="select">
+                    <span class="icon">👆</span>
+                    Select
+                </button>
+                <button class="tool-btn" data-tool="move">
+                    <span class="icon">✋</span>
+                    Move
+                </button>
+                <button class="tool-btn" data-tool="crop">
+                    <span class="icon">✂️</span>
+                    Crop
+                </button>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoomOut">-</button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="zoom-btn" id="zoomIn">+</button>
+                </div>
             </div>
-            <div class="canvas-wrapper">
-                <canvas id="mainCanvas" width="1920" height="1080"></canvas>
+            
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <canvas class="main-canvas" id="mainCanvas" width="1920" height="1080"></canvas>
                 <div class="canvas-overlay" id="canvasOverlay"></div>
             </div>
-        </section>
-    </main>
+        </main>
+
+        <!-- Properties Panel -->
+        <aside class="properties-panel" id="propertiesPanel">
+            <div class="panel-header">
+                <h3>Properties</h3>
+                <button class="panel-close" id="closePanelBtn">×</button>
+            </div>
+            
+            <div class="property-section">
+                <h4>Transform</h4>
+                <div class="property-row">
+                    <label>X:</label>
+                    <input type="number" id="posX" class="property-input">
+                </div>
+                <div class="property-row">
+                    <label>Y:</label>
+                    <input type="number" id="posY" class="property-input">
+                </div>
+                <div class="property-row">
+                    <label>Width:</label>
+                    <input type="number" id="width" class="property-input">
+                </div>
+                <div class="property-row">
+                    <label>Height:</label>
+                    <input type="number" id="height" class="property-input">
+                </div>
+                <div class="property-row">
+                    <label>Rotation:</label>
+                    <input type="range" id="rotation" min="0" max="360" class="property-slider">
+                    <span class="slider-value" id="rotationValue">0°</span>
+                </div>
+            </div>
+
+            <div class="property-section">
+                <h4>Style</h4>
+                <div class="property-row">
+                    <label>Opacity:</label>
+                    <input type="range" id="opacity" min="0" max="100" value="100" class="property-slider">
+                    <span class="slider-value" id="opacityValue">100%</span>
+                </div>
+                <div class="property-row">
+                    <label>Border Radius:</label>
+                    <input type="range" id="borderRadius" min="0" max="50" class="property-slider">
+                    <span class="slider-value" id="borderRadiusValue">0px</span>
+                </div>
+                <div class="property-row">
+                    <label>Border Width:</label>
+                    <input type="range" id="borderWidth" min="0" max="20" class="property-slider">
+                    <span class="slider-value" id="borderWidthValue">0px</span>
+                </div>
+                <div class="property-row">
+                    <label>Border Color:</label>
+                    <input type="color" id="borderColor" value="#ffffff" class="color-input">
+                </div>
+            </div>
+
+            <div class="property-section">
+                <h4>Effects</h4>
+                <div class="property-row">
+                    <label>Shadow Blur:</label>
+                    <input type="range" id="shadowBlur" min="0" max="50" class="property-slider">
+                    <span class="slider-value" id="shadowBlurValue">0px</span>
+                </div>
+                <div class="property-row">
+                    <label>Shadow Color:</label>
+                    <input type="color" id="shadowColor" value="#000000" class="color-input">
+                </div>
+                <div class="property-row">
+                    <label>3D Rotate X:</label>
+                    <input type="range" id="rotateX" min="-180" max="180" value="0" class="property-slider">
+                    <span class="slider-value" id="rotateXValue">0°</span>
+                </div>
+                <div class="property-row">
+                    <label>3D Rotate Y:</label>
+                    <input type="range" id="rotateY" min="-180" max="180" value="0" class="property-slider">
+                    <span class="slider-value" id="rotateYValue">0°</span>
+                </div>
+                <div class="property-row">
+                    <label>3D Rotate Z:</label>
+                    <input type="range" id="rotateZ" min="-180" max="180" value="0" class="property-slider">
+                    <span class="slider-value" id="rotateZValue">0°</span>
+                </div>
+            </div>
+
+            <div class="property-section" id="textProperties" style="display: none;">
+                <h4>Text</h4>
+                <div class="property-row">
+                    <label>Font Family:</label>
+                    <select id="fontFamily" class="property-select">
+                        <option value="Inter">Inter</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                    </select>
+                </div>
+                <div class="property-row">
+                    <label>Font Size:</label>
+                    <input type="range" id="fontSize" min="8" max="200" value="24" class="property-slider">
+                    <span class="slider-value" id="fontSizeValue">24px</span>
+                </div>
+                <div class="property-row">
+                    <label>Text Color:</label>
+                    <input type="color" id="textColor" value="#ffffff" class="color-input">
+                </div>
+                <div class="property-row">
+                    <label>Text Content:</label>
+                    <textarea id="textContent" class="property-textarea" placeholder="Enter text..."></textarea>
+                </div>
+            </div>
+        </aside>
+    </div>
 
     <!-- Timeline -->
-    <section class="timeline-container">
+    <div class="timeline-container">
         <div class="timeline-header">
-            <h3>Timeline</h3>
             <div class="timeline-controls">
-                <button class="btn btn-small" id="addTrack">+ Track</button>
-                <button class="btn btn-small" id="deleteTrack">- Track</button>
+                <button class="timeline-btn" id="playBtn">▶️</button>
+                <button class="timeline-btn" id="pauseBtn">⏸️</button>
+                <button class="timeline-btn" id="stopBtn">⏹️</button>
+                <span class="timeline-time" id="currentTime">00:00</span>
+                <span>/</span>
+                <span class="timeline-time" id="totalTime">00:30</span>
+            </div>
+            <div class="timeline-zoom">
+                <button class="timeline-btn" id="timelineZoomOut">-</button>
+                <button class="timeline-btn" id="timelineZoomIn">+</button>
             </div>
         </div>
+        
         <div class="timeline-content">
             <div class="timeline-tracks" id="timelineTracks">
-                <div class="timeline-track" data-track="0">
-                    <div class="track-header">Track 1</div>
-                    <div class="track-content"></div>
+                <div class="timeline-track" data-track="video">
+                    <div class="track-header">Video</div>
+                    <div class="track-content" id="videoTrack"></div>
+                </div>
+                <div class="timeline-track" data-track="audio">
+                    <div class="track-header">Audio</div>
+                    <div class="track-content" id="audioTrack"></div>
+                </div>
+                <div class="timeline-track" data-track="text">
+                    <div class="track-header">Text</div>
+                    <div class="track-content" id="textTrack"></div>
                 </div>
             </div>
             <div class="timeline-ruler" id="timelineRuler"></div>
             <div class="timeline-playhead" id="timelinePlayhead"></div>
         </div>
-    </section>
+    </div>
 
     <!-- Export Modal -->
     <div class="modal" id="exportModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Export Video</h3>
-                <button class="btn btn-icon modal-close" id="closeExportModal">✕</button>
+                <button class="modal-close" id="closeExportModal">×</button>
             </div>
             <div class="modal-body">
                 <div class="export-options">
-                    <div class="option-group">
+                    <div class="export-option">
                         <label>Format:</label>
                         <select id="exportFormat">
                             <option value="mp4">MP4</option>
@@ -114,7 +281,7 @@
                             <option value="gif">GIF</option>
                         </select>
                     </div>
-                    <div class="option-group">
+                    <div class="export-option">
                         <label>Quality:</label>
                         <select id="exportQuality">
                             <option value="high">High (1080p)</option>
@@ -122,7 +289,7 @@
                             <option value="low">Low (480p)</option>
                         </select>
                     </div>
-                    <div class="option-group">
+                    <div class="export-option">
                         <label>Frame Rate:</label>
                         <select id="exportFrameRate">
                             <option value="60">60 FPS</option>
@@ -135,7 +302,7 @@
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
-                    <p id="progressText">Preparing export...</p>
+                    <div class="progress-text" id="progressText">Preparing export...</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -150,15 +317,10 @@
         <div class="loading-content">
             <div class="loading-spinner"></div>
             <h2>editIQ</h2>
-            <p>Loading your video editor...</p>
+            <p>Loading your professional video editor...</p>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="utils.js"></script>
-    <script src="canvas.js"></script>
-    <script src="timeline.js"></script>
-    <script src="export.js"></script>
-    <script src="app.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
