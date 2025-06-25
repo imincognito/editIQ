@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>editIQ - Professional Video Editor</title>
+    <meta name="description" content="editIQ - A powerful, browser-based video editor with drag-and-drop functionality, real-time editing, and export capabilities. Built by Noskam Amkahc.">
+    <meta name="keywords" content="video editor, browser video editor, online video editing, editIQ">
+    <meta name="author" content="Noskam Amkahc">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+<body class="dark-theme">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <h1 class="logo">editIQ</h1>
+            <span class="subtitle">by Noskam Amkahc</span>
+        </div>
+        <div class="header-center">
+            <button class="btn btn-primary" id="playBtn">▶️ Play</button>
+            <button class="btn btn-secondary" id="pauseBtn">⏸️ Pause</button>
+            <button class="btn btn-secondary" id="stopBtn">⏹️ Stop</button>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-icon" id="themeToggle">🌙</button>
+            <button class="btn btn-primary" id="exportBtn">📤 Export</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3>Media Library</h3>
+                <div class="media-upload">
+                    <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+                    <button class="btn btn-secondary" id="uploadBtn">📁 Upload Files</button>
+                </div>
+                <div class="media-grid" id="mediaGrid">
+                    <!-- Uploaded media will appear here -->
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Elements</h3>
+                <div class="elements-grid">
+                    <div class="element-item" data-type="text">📝 Text</div>
+                    <div class="element-item" data-type="shape">🔷 Shape</div>
+                    <div class="element-item" data-type="emoji">😀 Emoji</div>
+                    <div class="element-item" data-type="gif">🎞️ GIF</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Properties</h3>
+                <div class="properties-panel" id="propertiesPanel">
+                    <p>Select an element to edit properties</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <section class="canvas-container">
+            <div class="canvas-toolbar">
+                <button class="btn btn-icon" id="zoomOut">🔍-</button>
+                <span id="zoomLevel">100%</span>
+                <button class="btn btn-icon" id="zoomIn">🔍+</button>
+                <button class="btn btn-secondary" id="resetZoom">Reset</button>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="mainCanvas" width="1920" height="1080"></canvas>
+                <div class="canvas-overlay" id="canvasOverlay"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Timeline -->
+    <section class="timeline-container">
+        <div class="timeline-header">
+            <h3>Timeline</h3>
+            <div class="timeline-controls">
+                <button class="btn btn-small" id="addTrack">+ Track</button>
+                <button class="btn btn-small" id="deleteTrack">- Track</button>
+            </div>
+        </div>
+        <div class="timeline-content">
+            <div class="timeline-tracks" id="timelineTracks">
+                <div class="timeline-track" data-track="0">
+                    <div class="track-header">Track 1</div>
+                    <div class="track-content"></div>
+                </div>
+            </div>
+            <div class="timeline-ruler" id="timelineRuler"></div>
+            <div class="timeline-playhead" id="timelinePlayhead"></div>
+        </div>
+    </section>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Video</h3>
+                <button class="btn btn-icon modal-close" id="closeExportModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <div class="option-group">
+                        <label>Format:</label>
+                        <select id="exportFormat">
+                            <option value="mp4">MP4</option>
+                            <option value="webm">WebM</option>
+                            <option value="gif">GIF</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label>Quality:</label>
+                        <select id="exportQuality">
+                            <option value="high">High (1080p)</option>
+                            <option value="medium">Medium (720p)</option>
+                            <option value="low">Low (480p)</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label>Frame Rate:</label>
+                        <select id="exportFrameRate">
+                            <option value="60">60 FPS</option>
+                            <option value="30">30 FPS</option>
+                            <option value="24">24 FPS</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="export-progress" id="exportProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText">Preparing export...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelExport">Cancel</button>
+                <button class="btn btn-primary" id="startExport">Start Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>editIQ</h2>
+            <p>Loading your video editor...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="utils.js"></script>
+    <script src="canvas.js"></script>
+    <script src="timeline.js"></script>
+    <script src="export.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
