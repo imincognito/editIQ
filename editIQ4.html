@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>editIQ 2.0 — Futuristic Web Editor</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+    /* === THEMES === */
+    :root {
+      --bg-dark: #121214;
+      --primary-glow: #00f0ff;
+      --accent-color: #0ff;
+      --text-light: #eee;
+      --panel-bg: #1b1b23;
+      --shadow-glow: rgba(0, 255, 255, 0.25);
+      --font-family: 'Orbitron', sans-serif;
+    }
+    body.theme-purple {
+      --primary-glow: #ae00ff;
+      --accent-color: #c08cff;
+      --shadow-glow: rgba(174, 0, 255, 0.3);
+      --panel-bg: #2a1b3d;
+      --bg-dark: #1a122a;
+    }
+    body.theme-red {
+      --primary-glow: #ff0055;
+      --accent-color: #ff80a5;
+      --shadow-glow: rgba(255, 0, 85, 0.3);
+      --panel-bg: #3a1b22;
+      --bg-dark: #1a1214;
+    }
+
+    /* === BASE STYLES === */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: var(--font-family);
+      background-color: var(--bg-dark);
+      color: var(--text-light);
+      display: grid;
+      grid-template-columns: 240px 1fr 320px;
+      grid-template-rows: 48px 1fr 120px;
+      grid-template-areas:
+        "topbar topbar topbar"
+        "sidebar canvas properties"
+        "layers layers layers";
+      overflow: hidden;
+      user-select: none;
+    }
+    button, input, select {
+      font-family: var(--font-family);
+    }
+    button {
+      cursor: pointer;
+    }
+
+    /* === TOPBAR === */
+    header {
+      grid-area: topbar;
+      background: var(--panel-bg);
+      border-bottom: 1px solid #222;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 1rem;
+      color: var(--primary-glow);
+      text-shadow: 0 0 8px var(--primary-glow);
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+    header .title {
+      flex-grow: 1;
+    }
+    header button {
+      background: none;
+      border: 1.5px solid var(--primary-glow);
+      color: var(--primary-glow);
+      padding: 6px 12px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: background 0.3s ease;
+    }
+    header button:hover {
+      background: var(--primary-glow);
+      color: var(--bg-dark);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+    header button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* === SIDEBAR TOOLS === */
+    aside.sidebar {
+      grid-area: sidebar;
+      background: var(--panel-bg);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      border-right: 1px solid #222;
+      overflow-y: auto;
+    }
+    .tool-button {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.7rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      border: 1.5px solid var(--primary-glow);
+      color: var(--accent-color);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    .tool-button:hover {
+      background: var(--primary-glow);
+      color: var(--bg-dark);
+      box-shadow: 0 0 8px var(--primary-glow);
+    }
+    .tool-button svg {
+      width: 18px;
+      height: 18px;
+      fill: var(--accent-color);
+      transition: fill 0.3s ease;
+      pointer-events: none;
+    }
+    .tool-button:hover svg {
+      fill: var(--bg-dark);
+    }
+
+    /* === CANVAS === */
+    main.canvas {
+      grid-area: canvas;
+      position: relative;
+      background: linear-gradient(135deg, #0a0a10 0%, #17171f 100%);
+      overflow: hidden;
+      border: 1px solid #222;
+      margin: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+      transform-origin: top left;
+    }
+    .canvas-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 600px;
+      background: #14141a;
+      border-radius: 8px;
+      cursor: default;
+      overflow: hidden;
+      transform-origin: 0 0;
+    }
+
+    /* === DRAGGABLE ELEMENTS === */
+    .draggable {
+      position: absolute;
+      user-select: none;
+      cursor: move;
+      border-radius: 6px;
+      box-shadow: 0 0 10px var(--primary-glow);
+      transition: box-shadow 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: transparent;
+      border: 2px solid transparent;
+    }
+    .draggable.selected {
+      border-color: var(--primary-glow);
+      box-shadow: 0 0 14px 3px var(--primary-glow);
+      background: rgba(0, 255, 255, 0.1);
+    }
+    /* Text style */
+    .draggable.text {
+      color: var(--accent-color);
+      font-weight: 700;
+      font-size: 1.3rem;
+      padding: 6px 10px;
+      white-space: nowrap;
+      user-select: text;
+      cursor: text;
+      background: transparent;
+      border: 2px solid transparent;
+      text-shadow: 0 0 5px var(--primary-glow);
+    }
+
+    /* Image style */
+    .draggable.image img {
+      max-width: 100%;
+      max-height: 100%;
+      user-select: none;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* Video style */
+    .draggable.video video {
+      max-width: 100%;
+      max-height: 100%;
+      user-select: none;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* Shape style */
+    .draggable.shape {
+      background: var(--accent-color);
+      opacity: 0.7;
+      user-select: none;
+    }
+
+    /* === PROPERTIES PANEL === */
+    aside.properties {
+      grid-area: properties;
+      background: var(--panel-bg);
+      padding: 1rem;
+      border-left: 1px solid #222;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      font-size: 0.9rem;
+      overflow-y: auto;
+    }
+    aside.properties h2 {
+      color: var(--primary-glow);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid #222;
+      padding-bottom: 0.5rem;
+      margin: 0 0 10px 0;
+    }
+    .property-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .property-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .property-row button {
+      flex: 1;
+      background: none;
+      border: 1px solid var(--primary-glow);
+      color: var(--primary-glow);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      transition: background 0.3s ease;
+    }
+    .property-row button:hover {
+      background: var(--primary-glow);
+      color: var(--bg-dark);
+    }
+    label {
+      color: var(--accent-color);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    input[type="text"],
+    input[type="number"],
+    select,
+    input[type="range"] {
+      background: #101018;
+      border: 1px solid #222;
+      border-radius: 5px;
+      color: var(--text-light);
+      padding: 6px 10px;
+      font-family: var(--font-family);
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    input[type="range"]:focus {
+      outline: none;
+      border-color: var(--primary-glow);
+      box-shadow: 0 0 6px var(--primary-glow);
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #222;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary-glow);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--primary-glow);
+      border: none;
+      margin-top: -5px;
+    }
+
+    /* === LAYERS PANEL === */
+    aside.layers {
+      grid-area: layers;
+      background: var(--panel-bg);
+      border-top: 1px solid #222;
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      overflow-x: auto;
+      color: var(--accent-color);
+      user-select: none;
+    }
+    .layer-item {
+      background: transparent;
+      border: 1.5px solid var(--primary-glow);
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .layer-item.selected {
+      background: var(--primary-glow);
+      color: var(--bg-dark);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* === ZOOM CONTROLS === */
+    #zoom-controls {
+      margin-left: auto;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    #zoom-controls button {
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 1.3rem;
+      line-height: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: none;
+      border: 1.5px solid var(--primary-glow);
+      color: var(--primary-glow);
+      transition: background 0.3s ease;
+    }
+    #zoom-controls button:hover {
+      background: var(--primary-glow);
+      color: var(--bg-dark);
+    }
+
+    /* === ANIMATION TIMELINE === */
+    #timeline {
+      grid-area: timeline;
+      height: 120px;
+      background: var(--panel-bg);
+      border-top: 1px solid #222;
+      display: flex;
+      flex-direction: column;
+      padding: 0.5rem 1rem;
+      gap: 8px;
+      color: var(--accent-color);
+      user-select: none;
+    }
+    #timeline h3 {
+      margin: 0;
+      font-weight: 700;
+      color: var(--primary-glow);
+    }
+    #keyframes-list {
+      flex: 1;
+      overflow-x: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+    .keyframe {
+      width: 10px;
+      height: 10px;
+      background: var(--accent-color);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 6px var(--primary-glow);
+      transition: transform 0.2s ease;
+    }
+    .keyframe:hover, .keyframe.selected {
+      transform: scale(1.5);
+      background: var(--primary-glow);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    /* Resizer styles */
+    .resizer {
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header>
+    <div class="title">editIQ 2.0</div>
+    <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
+    <button id="btn-delete" title="Delete Selected (Del)">Delete</button>
+    <button id="btn-new" title="New Project">New</button>
+    <button id="btn-save" title="Save Project">Save</button>
+    <button id="btn-export-png" title="Export as PNG">Export PNG</button>
+    <button id="btn-export-mp4" title="Export as MP4">Export MP4</button>
+    <select id="theme-switcher" title="Switch Theme">
+      <option value="default">Theme: Cyan</option>
+      <option value="purple">Theme: Purple</option>
+      <option value="red">Theme: Red</option>
+    </select>
+  </header>
+
+  <!-- SIDEBAR TOOLS -->
+  <aside class="sidebar" role="toolbar" aria-label="Editor Tools">
+    <div class="tool-button" id="add-text" tabindex="0" title="Add Text">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17v-2h8v2H4zm0-6V9h12v2H4zm0-4V5h16v2H4z"/></svg>
+      Text
+    </div>
+    <div class="tool-button" id="add-shape" tabindex="0" title="Add Shape">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
+      Shape
+    </div>
+    <div class="tool-button" id="add-image" tabindex="0" title="Add Image">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5"/><path d="M21 15l-5-5-5 5"/></svg>
+      Image
+      <input type="file" id="file-image" accept="image/*" style="display:none" />
+    </div>
+    <div class="tool-button" id="add-video" tabindex="0" title="Add Video">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-1.104-.896-2-2-2H5c-1.104 0-2 .896-2 2v10c0 1.104.896 2 2 2h10c1.104 0 2-.896 2-2v-3.5l4 4v-11l-4 4z"/></svg>
+      Video
+      <input type="file" id="file-video" accept="video/*" style="display:none" />
+    </div>
+  </aside>
+
+  <!-- MAIN CANVAS -->
+  <main class="canvas" tabindex="0" aria-label="Editing Canvas">
+    <div class="canvas-inner" id="canvas"></div>
+  </main>
+
+  <!-- PROPERTIES PANEL -->
+  <aside class="properties" aria-label="Properties Panel">
+    <h2>Properties</h2>
+    <div class="property-group">
+      <label for="prop-x">Position X</label>
+      <input type="number" id="prop-x" />
+    </div>
+    <div class="property-group">
+      <label for="prop-y">Position Y</label>
+      <input type="number" id="prop-y" />
+    </div>
+    <div class="property-group">
+      <label for="prop-width">Width (px)</label>
+      <input type="number" id="prop-width" />
+    </div>
+    <div class="property-group">
+      <label for="prop-height">Height (px)</label>
+      <input type="number" id="prop-height" />
+    </div>
+    <div class="property-group" id="text-content-group">
+      <label for="prop-text">Text Content</label>
+      <input type="text" id="prop-text" />
+    </div>
+    <div class="property-group">
+      <label for="prop-rotation">Rotation (deg)</label>
+      <input type="number" id="prop-rotation" min="0" max="360" step="1" />
+    </div>
+    
+    <!-- NEW FLIP CONTROLS -->
+    <div class="property-group">
+      <label>Flip Controls</label>
+      <div class="property-row">
+        <button id="flip-horizontal" title="Flip Horizontal">↔ Flip H</button>
+        <button id="flip-vertical" title="Flip Vertical">↕ Flip V</button>
+      </div>
+    </div>
+    
+    <div class="property-group">
+      <label for="flip-x">Flip X Scale</label>
+      <input type="range" id="flip-x" min="-2" max="2" step="0.1" value="1" />
+      <span id="flip-x-value">1</span>
+    </div>
+    
+    <div class="property-group">
+      <label for="flip-y">Flip Y Scale</label>
+      <input type="range" id="flip-y" min="-2" max="2" step="0.1" value="1" />
+      <span id="flip-y-value">1</span>
+    </div>
+    
+    <hr style="border-color:#222;" />
+    <h2>Filters</h2>
+    <div class="property-group">
+      <label for="filter-brightness">Brightness</label>
+      <input type="range" id="filter-brightness" min="0" max="200" value="100" />
+    </div>
+    <div class="property-group">
+      <label for="filter-contrast">Contrast</label>
+      <input type="range" id="filter-contrast" min="0" max="200" value="100" />
+    </div>
+    <div class="property-group">
+      <label for="filter-saturate">Saturation</label>
+      <input type="range" id="filter-saturate" min="0" max="300" value="100" />
+    </div>
+  </aside>
+
+  <!-- LAYERS PANEL -->
+  <aside class="layers" aria-label="Layers Panel" id="layers-panel">
+    <!-- Layers will be dynamically added here -->
+  </aside>
+
+  <!-- TIMELINE (Animation Keyframes) -->
+  <div id="timeline" style="display:none;">
+    <h3>Animation Timeline (Coming Soon)</h3>
+    <div id="keyframes-list"></div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+<script>
+  // === GLOBALS ===
+  const canvas = document.getElementById('canvas');
+  const addTextBtn = document.getElementById('add-text');
+  const addShapeBtn = document.getElementById('add-shape');
+  const addImageBtn = document.getElementById('add-image');
+  const addVideoBtn = document.getElementById('add-video');
+
+  const fileImageInput = document.getElementById('file-image');
+  const fileVideoInput = document.getElementById('file-video');
+
+  const propX = document.getElementById('prop-x');
+  const propY = document.getElementById('prop-y');
+  const propWidth = document.getElementById('prop-width');
+  const propHeight = document.getElementById('prop-height');
+  const propText = document.getElementById('prop-text');
+  const propRotation = document.getElementById('prop-rotation');
+
+  const filterBrightness = document.getElementById('filter-brightness');
+  const filterContrast = document.getElementById('filter-contrast');
+  const filterSaturate = document.getElementById('filter-saturate');
+
+  // NEW FLIP CONTROLS
+  const flipHorizontalBtn = document.getElementById('flip-horizontal');
+  const flipVerticalBtn = document.getElementById('flip-vertical');
+  const flipXSlider = document.getElementById('flip-x');
+  const flipYSlider = document.getElementById('flip-y');
+  const flipXValue = document.getElementById('flip-x-value');
+  const flipYValue = document.getElementById('flip-y-value');
+
+  // UNDO/REDO CONTROLS
+  const undoBtn = document.getElementById('btn-undo');
+  const redoBtn = document.getElementById('btn-redo');
+  const deleteBtn = document.getElementById('btn-delete');
+
+  const layersPanel = document.getElementById('layers-panel');
+  const themeSwitcher = document.getElementById('theme-switcher');
+
+  let selectedElement = null;
+  let zoomLevel = 1;
+
+  // === UNDO/REDO SYSTEM ===
+  let history = [];
+  let historyIndex = -1;
+  const MAX_HISTORY = 50;
+
+  function saveState() {
+    // Remove any future history if we're not at the end
+    if (historyIndex < history.length - 1) {
+      history = history.slice(0, historyIndex + 1);
+    }
+    
+    // Save current state
+    const state = {
+      elements: layers.map(el => ({
+        type: el.dataset.type,
+        content: el.textContent || '',
+        style: {
+          left: el.style.left,
+          top: el.style.top,
+          width: el.style.width,
+          height: el.style.height,
+          transform: el.style.transform,
+          filter: el.style.filter
+        },
+        src: el.querySelector('img')?.src || el.querySelector('video')?.src || null
+      }))
+    };
+    
+    history.push(JSON.stringify(state));
+    historyIndex++;
+    
+    // Limit history size
+    if (history.length > MAX_HISTORY) {
+      history.shift();
+      historyIndex--;
+    }
+    
+    updateUndoRedoButtons();
+  }
+
+  function undo() {
+    if (historyIndex > 0) {
+      historyIndex--;
+      restoreState(JSON.parse(history[historyIndex]));
+      updateUndoRedoButtons();
+    }
+  }
+
+  function redo() {
+    if (historyIndex < history.length - 1) {
+      historyIndex++;
+      restoreState(JSON.parse(history[historyIndex]));
+      updateUndoRedoButtons();
+    }
+  }
+
+  function restoreState(state) {
+    // Clear current elements
+    layers.forEach(el => el.remove());
+    layers = [];
+    selectedElement = null;
+    clearProperties();
+    
+    // Restore elements
+    state.elements.forEach(elementData => {
+      const el = document.createElement('div');
+      el.classList.add('draggable', elementData.type);
+      el.dataset.type = elementData.type;
+      
+      // Apply styles
+      Object.assign(el.style, elementData.style);
+      
+      // Set content based on type
+      if (elementData.type === 'text') {
+        el.textContent = elementData.content;
+      } else if (elementData.type === 'image' && elementData.src) {
+        const img = document.createElement('img');
+        img.src = elementData.src;
+        el.appendChild(img);
+      } else if (elementData.type === 'video' && elementData.src) {
+        const video = document.createElement('video');
+        video.src = elementData.src;
+        video.controls = true;
+        video.muted = true;
+        el.appendChild(video);
+      } else if (elementData.type === 'shape') {
+        el.style.borderRadius = '50%';
+      }
+      
+      makeDraggableAndResizable(el);
+      canvas.appendChild(el);
+      layers.push(el);
+    });
+    
+    renderLayers();
+  }
+
+  function updateUndoRedoButtons() {
+    undoBtn.disabled = historyIndex <= 0;
+    redoBtn.disabled = historyIndex >= history.length - 1;
+  }
+
+  // Event listeners for undo/redo
+  undoBtn.addEventListener('click', undo);
+  redoBtn.addEventListener('click', redo);
+  deleteBtn.addEventListener('click', deleteSelected);
+
+  // === FLIP FUNCTIONALITY ===
+  function updateFlipValues() {
+    flipXValue.textContent = flipXSlider.value;
+    flipYValue.textContent = flipYSlider.value;
+  }
+
+  function applyFlip() {
+    if (!selectedElement) return;
+    
+    const scaleX = parseFloat(flipXSlider.value);
+    const scaleY = parseFloat(flipYSlider.value);
+    const rotation = parseInt(propRotation.value) || 0;
+    
+    selectedElement.style.transform = `rotate(${rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+  }
+
+  flipHorizontalBtn.addEventListener('click', () => {
+    if (!selectedElement) return;
+    flipXSlider.value = flipXSlider.value == 1 ? -1 : 1;
+    updateFlipValues();
+    applyFlip();
+    saveState();
+  });
+
+  flipVerticalBtn.addEventListener('click', () => {
+    if (!selectedElement) return;
+    flipYSlider.value = flipYSlider.value == 1 ? -1 : 1;
+    updateFlipValues();
+    applyFlip();
+    saveState();
+  });
+
+  flipXSlider.addEventListener('input', () => {
+    updateFlipValues();
+    applyFlip();
+  });
+
+  flipYSlider.addEventListener('input', () => {
+    updateFlipValues();
+    applyFlip();
+  });
+
+  flipXSlider.addEventListener('change', saveState);
+  flipYSlider.addEventListener('change', saveState);
+
+  // === DELETE FUNCTION ===
+  function deleteSelected() {
+    if (selectedElement) {
+      removeLayer(selectedElement);
+      selectedElement.remove();
+      selectedElement = null;
+      clearProperties();
+      saveState();
+    }
+  }
+
+  // === KEYBOARD SHORTCUTS ===
+  window.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    } else if (e.key === 'Delete' && selectedElement) {
+      deleteSelected();
+    }
+  });
+
+  // --- DRAGGABLE + RESIZABLE ---
+  function makeDraggableAndResizable(el) {
+    el.style.position = 'absolute';
+
+    // Dragging
+    let dragging = false, dragOffsetX = 0, dragOffsetY = 0;
+
+    el.addEventListener('mousedown', (e) => {
+      if(e.target.classList.contains('resizer')) return; // don't drag if resizing
+
+      e.preventDefault();
+      dragging = true;
+
+      const rect = el.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+
+      selectElement(el);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if(!dragging) return;
+      e.preventDefault();
+
+      let x = e.clientX - dragOffsetX - canvas.getBoundingClientRect().left;
+      let y = e.clientY - dragOffsetY - canvas.getBoundingClientRect().top;
+
+      // clamp inside canvas
+      x = Math.min(Math.max(0, x), canvas.clientWidth - el.offsetWidth);
+      y = Math.min(Math.max(0, y), canvas.clientHeight - el.offsetHeight);
+
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+
+      updateProperties(el);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (dragging) {
+        dragging = false;
+        saveState();
+      }
+    });
+
+    // Resizing
+    createResizers(el);
+  }
+
+  // Create 4 corner resizers for resizing
+  function createResizers(el) {
+    const corners = ['nw', 'ne', 'sw', 'se'];
+    corners.forEach(corner => {
+      const resizer = document.createElement('div');
+      resizer.className = 'resizer ' + corner;
+      Object.assign(resizer.style, {
+        position: 'absolute',
+        width: '12px',
+        height: '12px',
+        background: 'var(--primary-glow)',
+        borderRadius: '50%',
+        cursor: corner + '-resize',
+        zIndex: 10,
+      });
+      switch(corner) {
+        case 'nw': resizer.style.left = '-6px'; resizer.style.top = '-6px'; break;
+        case 'ne': resizer.style.right = '-6px'; resizer.style.top = '-6px'; break;
+        case 'sw': resizer.style.left = '-6px'; resizer.style.bottom = '-6px'; break;
+        case 'se': resizer.style.right = '-6px'; resizer.style.bottom = '-6px'; break;
+      }
+      el.appendChild(resizer);
+
+      resizer.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = el.offsetWidth;
+        const startHeight = el.offsetHeight;
+        const startLeft = parseInt(el.style.left) || 0;
+        const startTop = parseInt(el.style.top) || 0;
+
+        function onMouseMove(ev) {
+          let dx = ev.clientX - startX;
+          let dy = ev.clientY - startY;
+
+          if(corner.includes('e')) {
+            el.style.width = Math.max(30, startWidth + dx) + 'px';
+          }
+          if(corner.includes('s')) {
+            el.style.height = Math.max(30, startHeight + dy) + 'px';
+          }
+          if(corner.includes('w')) {
+            let newWidth = Math.max(30, startWidth - dx);
+            if(newWidth !== el.offsetWidth) {
+              el.style.width = newWidth + 'px';
+              el.style.left = (startLeft + dx) + 'px';
+            }
+          }
+          if(corner.includes('n')) {
+            let newHeight = Math.max(30, startHeight - dy);
+            if(newHeight !== el.offsetHeight) {
+              el.style.height = newHeight + 'px';
+              el.style.top = (startTop + dy) + 'px';
+            }
+          }
+
+          updateProperties(el);
+        }
+        function onMouseUp() {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          saveState();
+        }
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    });
+  }
+
+  // === SELECT ELEMENT & update properties panel ===
+  function selectElement(el) {
+    if(selectedElement) {
+      selectedElement.classList.remove('selected');
+    }
+    selectedElement = el;
+    selectedElement.classList.add('selected');
+
+    updateProperties(el);
+    updateLayersSelection(el);
+  }
+
+  // === UPDATE PROPERTIES PANEL from element styles & content ===
+  function updateProperties(el) {
+    const x = parseInt(el.style.left) || 0;
+    const y = parseInt(el.style.top) || 0;
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    const rotation = getRotation(el);
+    const scales = getScales(el);
+    
+    propX.value = x;
+    propY.value = y;
+    propWidth.value = width;
+    propHeight.value = height;
+    propRotation.value = rotation;
+    
+    // Update flip controls
+    flipXSlider.value = scales.scaleX;
+    flipYSlider.value = scales.scaleY;
+    updateFlipValues();
+
+    // Filters parsing
+    const filterStyle = el.style.filter || '';
+    const brightness = getFilterValue(filterStyle, 'brightness', 1) * 100;
+    const contrast = getFilterValue(filterStyle, 'contrast', 1) * 100;
+    const saturate = getFilterValue(filterStyle, 'saturate', 1) * 100;
+    filterBrightness.value = brightness;
+    filterContrast.value = contrast;
+    filterSaturate.value = saturate;
+
+    // Text content only if type=text
+    if(el.dataset.type === 'text') {
+      propText.value = el.textContent;
+      propText.disabled = false;
+      document.getElementById('text-content-group').style.display = 'block';
+    } else {
+      propText.value = '';
+      propText.disabled = true;
+      document.getElementById('text-content-group').style.display = 'none';
+    }
+  }
+
+  // Helper to get scales from transform
+  function getScales(el) {
+    const transform = el.style.transform || '';
+    const scaleXMatch = transform.match(/scaleX$$([^)]+)$$/);
+    const scaleYMatch = transform.match(/scaleY$$([^)]+)$$/);
+    
+    return {
+      scaleX: scaleXMatch ? parseFloat(scaleXMatch[1]) : 1,
+      scaleY: scaleYMatch ? parseFloat(scaleYMatch[1]) : 1
+    };
+  }
+
+  // Helper to parse CSS filter value (returns number)
+  function getFilterValue(filterString, filterName, defaultValue) {
+    const regex = new RegExp(`${filterName}\$$([^)]+)\$$`);
+    const match = filterString.match(regex);
+    if(!match) return defaultValue;
+    let val = match[1];
+    if(val.endsWith('%')) val = val.slice(0, -1) / 100;
+    else if(val.endsWith('deg')) val = parseFloat(val);
+    else val = parseFloat(val);
+    return val;
+  }
+
+  // === SET properties changes back to element ===
+  function applyPropertiesToElement() {
+    if(!selectedElement) return;
+
+    let x = parseInt(propX.value) || 0;
+    let y = parseInt(propY.value) || 0;
+    let w = parseInt(propWidth.value) || selectedElement.offsetWidth;
+    let h = parseInt(propHeight.value) || selectedElement.offsetHeight;
+    let rotation = parseInt(propRotation.value) || 0;
+
+    // Clamp inside canvas
+    x = Math.min(Math.max(0, x), canvas.clientWidth - w);
+    y = Math.min(Math.max(0, y), canvas.clientHeight - h);
+
+    selectedElement.style.left = x + 'px';
+    selectedElement.style.top = y + 'px';
+    selectedElement.style.width = w + 'px';
+    selectedElement.style.height = h + 'px';
+    
+    // Apply transform with flip
+    const scaleX = parseFloat(flipXSlider.value);
+    const scaleY = parseFloat(flipYSlider.value);
+    selectedElement.style.transform = `rotate(${rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+
+    // Filters
+    let brightness = filterBrightness.value;
+    let contrast = filterContrast.value;
+    let saturate = filterSaturate.value;
+
+    selectedElement.style.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%)`;
+
+    // Text content
+    if(selectedElement.dataset.type === 'text') {
+      selectedElement.textContent = propText.value;
+    }
+  }
+
+  // === Helper: get rotation degrees from transform style ===
+  function getRotation(el) {
+    const transform = el.style.transform || '';
+    const rotateMatch = transform.match(/rotate$$([^)]+)$$/);
+    if (!rotateMatch) return 0;
+    
+    const value = rotateMatch[1];
+    return parseInt(value.replace('deg', '')) || 0;
+  }
+
+  // === ELEMENT CREATION ===
+  // Add Text
+  addTextBtn.addEventListener('click', () => {
+    const el = document.createElement('div');
+    el.textContent = 'New Text';
+    el.classList.add('draggable', 'text');
+    el.style.left = '50px';
+    el.style.top = '50px';
+    el.style.width = '150px';
+    el.style.height = 'auto';
+    el.dataset.type = 'text';
+
+    makeDraggableAndResizable(el);
+    canvas.appendChild(el);
+    selectElement(el);
+    addLayer(el);
+    saveState();
+  });
+
+  // Add Shape (circle)
+  addShapeBtn.addEventListener('click', () => {
+    const el = document.createElement('div');
+    el.classList.add('draggable', 'shape');
+    el.style.left = '100px';
+    el.style.top = '100px';
+    el.style.width = '100px';
+    el.style.height = '100px';
+    el.style.borderRadius = '50%';
+    el.dataset.type = 'shape';
+
+    makeDraggableAndResizable(el);
+    canvas.appendChild(el);
+    selectElement(el);
+    addLayer(el);
+    saveState();
+  });
+
+  // Add Image
+  addImageBtn.addEventListener('click', () => {
+    fileImageInput.click();
+  });
+  fileImageInput.addEventListener('change', () => {
+    const file = fileImageInput.files[0];
+    if(!file) return;
+
+    const url = URL.createObjectURL(file);
+    const el = document.createElement('div');
+    el.classList.add('draggable', 'image');
+    el.style.left = '100px';
+    el.style.top = '100px';
+    el.style.width = '200px';
+    el.style.height = 'auto';
+    el.dataset.type = 'image';
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = file.name;
+    el.appendChild(img);
+
+    makeDraggableAndResizable(el);
+    canvas.appendChild(el);
+    selectElement(el);
+    addLayer(el);
+    saveState();
+
+    fileImageInput.value = ''; // reset input
+  });
+
+  // Add Video
+  addVideoBtn.addEventListener('click', () => {
+    fileVideoInput.click();
+  });
+  fileVideoInput.addEventListener('change', () => {
+    const file = fileVideoInput.files[0];
+    if(!file) return;
+
+    const url = URL.createObjectURL(file);
+    const el = document.createElement('div');
+    el.classList.add('draggable', 'video');
+    el.style.left = '100px';
+    el.style.top = '100px';
+    el.style.width = '320px';
+    el.style.height = '180px';
+    el.dataset.type = 'video';
+
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.autoplay = false;
+    video.loop = false;
+    video.muted = true;
+    el.appendChild(video);
+
+    makeDraggableAndResizable(el);
+    canvas.appendChild(el);
+    selectElement(el);
+    addLayer(el);
+    saveState();
+
+    fileVideoInput.value = '';
+  });
+
+  // === UPDATE ELEMENT ON PROPERTIES CHANGE ===
+  [propX, propY, propWidth, propHeight, propRotation, filterBrightness, filterContrast, filterSaturate].forEach(input => {
+    input.addEventListener('input', () => {
+      applyPropertiesToElement();
+    });
+    input.addEventListener('change', saveState);
+  });
+
+  propText.addEventListener('input', () => {
+    applyPropertiesToElement();
+  });
+  propText.addEventListener('change', saveState);
+
+  // === SELECT ELEMENT ON CLICK ===
+  canvas.addEventListener('click', e => {
+    if(e.target === canvas || e.target.id === 'canvas') {
+      if(selectedElement) {
+        selectedElement.classList.remove('selected');
+        selectedElement = null;
+        clearProperties();
+        updateLayersSelection(null);
+      }
+    }
+  });
+
+  // === PROPERTIES PANEL CLEAR ===
+  function clearProperties() {
+    propX.value = '';
+    propY.value = '';
+    propWidth.value = '';
+    propHeight.value = '';
+    propRotation.value = '';
+    propText.value = '';
+    propText.disabled = true;
+    filterBrightness.value = 100;
+    filterContrast.value = 100;
+    filterSaturate.value = 100;
+    flipXSlider.value = 1;
+    flipYSlider.value = 1;
+    updateFlipValues();
+    document.getElementById('text-content-group').style.display = 'none';
+  }
+
+  // === LAYERS PANEL LOGIC ===
+  let layers = [];
+
+  function addLayer(el) {
+    layers.push(el);
+    renderLayers();
+  }
+  function removeLayer(el) {
+    layers = layers.filter(l => l !== el);
+    renderLayers();
+  }
+
+  function renderLayers() {
+    const zoomControls = document.getElementById('zoom-controls');
+    layersPanel.innerHTML = '';
+    
+    // Render layers in reverse order (top first)
+    [...layers].reverse().forEach((el, i) => {
+      const layerItem = document.createElement('div');
+      layerItem.className = 'layer-item';
+      layerItem.textContent = el.dataset.type.charAt(0).toUpperCase() + el.dataset.type.slice(1);
+      if(el === selectedElement) layerItem.classList.add('selected');
+      layerItem.title = `Layer: ${el.dataset.type}`;
+
+      layerItem.addEventListener('click', () => {
+        selectElement(el);
+      });
+
+      // Drag to reorder layers (basic)
+      layerItem.draggable = true;
+      layerItem.addEventListener('dragstart', (ev) => {
+        ev.dataTransfer.setData('text/plain', layers.indexOf(el));
+      });
+      layerItem.addEventListener('dragover', (ev) => ev.preventDefault());
+      layerItem.addEventListener('drop', (ev) => {
+        ev.preventDefault();
+        const fromIndex = parseInt(ev.dataTransfer.getData('text/plain'));
+        const toIndex = layers.length - 1 - i;
+        if(fromIndex === toIndex) return;
+
+        // reorder layers array
+        const movedLayer = layers.splice(fromIndex,1)[0];
+        layers.splice(toIndex, 0, movedLayer);
+
+        // reorder DOM elements z-index accordingly
+        layers.forEach((layerEl, idx) => {
+          layerEl.style.zIndex = idx + 10; // keep above canvas base
+        });
+        renderLayers();
+        saveState();
+      });
+
+      layersPanel.appendChild(layerItem);
+    });
+    
+    // Re-add zoom controls
+    if (zoomControls) {
+      layersPanel.appendChild(zoomControls);
+    }
+    
+    // Update z-index on canvas elements
+    layers.forEach((layerEl, idx) => {
+      layerEl.style.zIndex = idx + 10;
+    });
+  }
+
+  function updateLayersSelection(el) {
+    const layerItems = layersPanel.querySelectorAll('.layer-item');
+    layerItems.forEach(item => item.classList.remove('selected'));
+    if(!el) return;
+    // Find layer index
+    const idx = layers.findIndex(l => l === el);
+    if(idx === -1) return;
+    // Select corresponding layer item (reverse order)
+    const reverseIdx = layers.length - 1 - idx;
+    layerItems[reverseIdx].classList.add('selected');
+  }
+
+  // === ZOOM CONTROLS ===
+  function setZoom(level) {
+    zoomLevel = level;
+    canvas.style.transform = `scale(${zoomLevel})`;
+  }
+  function zoomIn() {
+    setZoom(Math.min(zoomLevel + 0.1, 3));
+  }
+  function zoomOut() {
+    setZoom(Math.max(zoomLevel - 0.1, 0.3));
+  }
+  function zoomReset() {
+    setZoom(1);
+  }
+
+  // Add Zoom Controls buttons to layers panel for simplicity
+  const zoomControls = document.createElement('div');
+  zoomControls.id = 'zoom-controls';
+  zoomControls.innerHTML = `
+    <button title="Zoom Out">➖</button>
+    <button title="Reset Zoom">⭯</button>
+    <button title="Zoom In">➕</button>
+  `;
+  layersPanel.appendChild(zoomControls);
+  zoomControls.children[0].onclick = zoomOut;
+  zoomControls.children[1].onclick = zoomReset;
+  zoomControls.children[2].onclick = zoomIn;
+
+  // === EXPORT PNG FUNCTION ===
+  document.getElementById('btn-export-png').addEventListener('click', async () => {
+    // We create an offscreen canvas matching canvas size and draw elements onto it
+
+    const rect = canvas.getBoundingClientRect();
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = width;
+    offscreen.height = height;
+    const ctx = offscreen.getContext('2d');
+
+    // Fill background black (or transparent if preferred)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0,0,width,height);
+
+    // Draw all elements respecting their styles and transforms
+    // This is a simple rendering approximation
+
+    for(let el of layers) {
+      await drawElementToCanvas(ctx, el);
+    }
+
+    const dataURL = offscreen.toDataURL('image/png');
+
+    // Download image
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = 'editIQ-export.png';
+    a.click();
+  });
+
+  // Helper to draw elements on canvas (simplified, works for text, shapes, images)
+  async function drawElementToCanvas(ctx, el) {
+    const x = parseInt(el.style.left) || 0;
+    const y = parseInt(el.style.top) || 0;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const rotation = getRotation(el) * Math.PI / 180;
+    const scales = getScales(el);
+
+    ctx.save();
+
+    // Translate and rotate
+    ctx.translate(x + w/2, y + h/2);
+    ctx.rotate(rotation);
+    ctx.scale(scales.scaleX, scales.scaleY);
+    ctx.translate(-w/2, -h/2);
+
+    // Apply filters
+    const filterStr = el.style.filter || 'none';
+    ctx.filter = filterStr;
+
+    // Draw by type
+    if(el.dataset.type === 'text') {
+      ctx.fillStyle = 'cyan';
+      ctx.font = '700 24px Orbitron, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = 'cyan';
+      ctx.shadowBlur = 10;
+      ctx.fillText(el.textContent, 0, 0);
+    }
+    else if(el.dataset.type === 'shape') {
+      ctx.fillStyle = 'cyan';
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.ellipse(w/2, h/2, w/2, h/2, 0, 0, 2*Math.PI);
+      ctx.fill();
+    }
+    else if(el.dataset.type === 'image') {
+      const img = el.querySelector('img');
+      if(img && img.complete) {
+        ctx.drawImage(img, 0, 0, w, h);
+      }
+    }
+    else if(el.dataset.type === 'video') {
+      // Drawing video frames on canvas is tricky
+      const video = el.querySelector('video');
+      if(video && !video.paused) {
+        try {
+          ctx.drawImage(video, 0, 0, w, h);
+        } catch(e) {
+          // video not ready yet
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  // === EXPORT MP4 (using ffmpeg.wasm) - Simple Demo ===
+  document.getElementById('btn-export-mp4').addEventListener('click', async () => {
+    alert("MP4 export is an advanced feature and requires video processing. This demo exports a blank black video using ffmpeg.wasm");
+
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+    await ffmpeg.load();
+
+    // Create a black video 3 seconds long, 640x360
+    const cmd = [
+      '-f', 'lavfi',
+      '-i', 'color=c=black:s=640x360:d=3',
+      '-c:v', 'libx264',
+      '-t', '3',
+      'out.mp4'
+    ];
+    await ffmpeg.run(...cmd);
+
+    const data = ffmpeg.FS('readFile', 'out.mp4');
+
+    const videoBlob = new Blob([data.buffer], {type: 'video/mp4'});
+    const url = URL.createObjectURL(videoBlob);
+
+    // Download MP4
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'editIQ-export.mp4';
+    a.click();
+
+    URL.revokeObjectURL(url);
+  });
+
+  // === THEME SWITCHER ===
+  themeSwitcher.addEventListener('change', e => {
+    document.body.classList.remove('theme-purple', 'theme-red');
+    if(e.target.value !== 'default') {
+      document.body.classList.add('theme-' + e.target.value);
+    }
+  });
+
+  // Initialize
+  setZoom(1);
+  updateUndoRedoButtons();
+  updateFlipValues();
+  
+  // Save initial empty state
+  saveState();
+
+</script>
+
+</body>
+</html>
