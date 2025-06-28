@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>editIQ Cloud Editor - Local Upload</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    input, button {
+      margin: 10px;
+      padding: 10px 15px;
+      font-size: 16px;
+    }
+    video {
+      width: 640px;
+      margin: 20px 0;
+    }
+    .text-block {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    #status {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎬 editIQ Cloud Video Editor (Local File Upload)</h2>
+
+  <input type="file" id="videoFile" accept="video/mp4" />
+  <video id="preview" controls></video>
+
+  <div class="text-block">
+    <input type="text" id="textOverlay" placeholder="Overlay Text" />
+    <input type="number" id="startTime" placeholder="Start (s)" min="0" />
+    <input type="number" id="duration" placeholder="Duration (s)" min="1" />
+    <button id="renderBtn">🎥 Upload & Render</button>
+  </div>
+
+  <div id="status">Status: Waiting for video...</div>
+
+  <script>
+    const fileInput = document.getElementById('videoFile');
+    const preview = document.getElementById('preview');
+    const renderBtn = document.getElementById('renderBtn');
+    const statusDiv = document.getElementById('status');
+
+    let uploadedVideoUrl = null;
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file && file.type === 'video/mp4') {
+        const objectUrl = URL.createObjectURL(file);
+        preview.src = objectUrl;
+        uploadedVideoUrl = null; // Reset until uploaded
+        statusDiv.textContent = 'Preview loaded. Ready to upload...';
+      } else {
+        alert('Please select a valid MP4 video file.');
+      }
+    });
+
+    renderBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      const text = document.getElementById('textOverlay').value.trim();
+      const start = parseFloat(document.getElementById('startTime').value.trim());
+      const duration = parseFloat(document.getElementById('duration').value.trim());
+
+      if (!file || !text || isNaN(start) || isNaN(duration)) {
+        alert('Please upload a video and fill all fields.');
+        return;
+      }
+
+      statusDiv.textContent = '⏫ Uploading video to Shotstack...';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const uploadRes = await fetch('https://api.shotstack.io/stage/assets', {
+          method: 'POST',
+          headers: {
+            'x-api-key': 'sandbox_key_123456789'
+          },
+          body: formData
+        });
+
+        const uploadData = await uploadRes.json();
+        uploadedVideoUrl = uploadData.response.url;
+
+        if (!uploadedVideoUrl) throw new Error('Upload failed.');
+
+        statusDiv.textContent = '✅ Uploaded! Sending render request...';
+
+        const renderJson = {
+          timeline: {
+            background: "black",
+            tracks: [
+              {
+                clips: [
+                  {
+                    asset: {
+                      type: "video",
+                      src: uploadedVideoUrl
+                    },
+                    start: 0,
+                    length: 15,
+                    effect: "fadeIn"
+                  }
+                ]
+              },
+              {
+                clips: [
+                  {
+                    asset: {
+                      type: "title",
+                      text: text,
+                      style: "minimal",
+                      size: "large",
+                      color: "white"
+                    },
+                    start: start,
+                    length: duration,
+                    position: "center"
+                  }
+                ]
+              }
+            ]
+          },
+          output: {
+            format: "mp4",
+            resolution: "sd"
+          }
+        };
+
+        const renderRes = await fetch("https://api.shotstack.io/stage/render", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "sandbox_key_123456789"
+          },
+          body: JSON.stringify(renderJson)
+        });
+
+        const renderData = await renderRes.json();
+        const renderId = renderData.response.id;
+
+        statusDiv.textContent = '🛠️ Render started... polling for result...';
+
+        const pollRender = async () => {
+          const poll = await fetch(`https://api.shotstack.io/stage/render/${renderId}`, {
+            headers: { 'x-api-key': 'sandbox_key_123456789' }
+          });
+
+          const result = await poll.json();
+          const status = result.response.status;
+
+          if (status === 'done') {
+            const url = result.response.url;
+            statusDiv.innerHTML = `✅ Render complete: <a href="${url}" target="_blank">Download MP4</a>`;
+            preview.src = url;
+          } else if (status === 'failed') {
+            statusDiv.textContent = '❌ Render failed.';
+          } else {
+            setTimeout(pollRender, 3000);
+          }
+        };
+
+        pollRender();
+
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent = '❌ Error uploading or rendering.';
+      }
+    });
+  </script>
+</body>
+</html>
