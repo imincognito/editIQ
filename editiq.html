@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>editIQ 2.0 — Enhanced 3D Web Editor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap');
+
+        /* === THEMES === */
+        :root {
+            --bg-dark: #121214;
+            --primary-glow: #00f0ff;
+            --accent-color: #0ff;
+            --text-light: #eee;
+            --panel-bg: #1b1b23;
+            --shadow-glow: rgba(0, 255, 255, 0.25);
+            --font-family: 'Orbitron', sans-serif;
+            --border-color: #333;
+            --hover-bg: rgba(0, 255, 255, 0.1);
+            --success-color: #00ff88;
+            --warning-color: #ffaa00;
+            --error-color: #ff4444;
+        }
+
+        body.theme-purple {
+            --primary-glow: #ae00ff;
+            --accent-color: #c08cff;
+            --shadow-glow: rgba(174, 0, 255, 0.3);
+            --panel-bg: #2a1b3d;
+            --bg-dark: #1a122a;
+        }
+
+        body.theme-red {
+            --primary-glow: #ff0055;
+            --accent-color: #ff80a5;
+            --shadow-glow: rgba(255, 0, 85, 0.3);
+            --panel-bg: #3a1b22;
+            --bg-dark: #1a1214;
+        }
+
+        body.theme-green {
+            --primary-glow: #00ff88;
+            --accent-color: #66ffaa;
+            --shadow-glow: rgba(0, 255, 136, 0.3);
+            --panel-bg: #1b3a22;
+            --bg-dark: #121a14;
+        }
+
+        /* === BASE STYLES === */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: var(--font-family);
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: grid;
+            grid-template-columns: 280px 1fr 380px;
+            grid-template-rows: 60px 1fr 140px;
+            grid-template-areas: 
+                "topbar topbar topbar"
+                "sidebar canvas properties"
+                "layers layers layers";
+            overflow: hidden;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                grid-template-columns: 220px 1fr 320px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+                grid-template-rows: 60px 200px 1fr 120px;
+                grid-template-areas: 
+                    "topbar"
+                    "sidebar"
+                    "canvas"
+                    "layers";
+            }
+        }
+
+        button, input, select {
+            font-family: var(--font-family);
+        }
+
+        button {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* === TOPBAR === */
+        header {
+            grid-area: topbar;
+            background: var(--panel-bg);
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 1rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 8px var(--primary-glow);
+            font-weight: 600;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        header .title {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-glow);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg-dark);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        header button {
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            color: var(--primary-glow);
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--primary-glow);
+            transform: translateY(-1px);
+        }
+
+        header button:active {
+            transform: translateY(0);
+        }
+
+        header select {
+            background: var(--panel-bg);
+            border: 2px solid var(--primary-glow);
+            color: var(--accent-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        /* === SIDEBAR TOOLS === */
+        aside.sidebar {
+            grid-area: sidebar;
+            background: var(--panel-bg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border-right: 2px solid var(--border-color);
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar h3 {
+            color: var(--primary-glow);
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .tool-button {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            color: var(--accent-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            transition: all 0.3s ease;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--hover-bg), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .tool-button:hover::before {
+            left: 100%;
+        }
+
+        .tool-button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--primary-glow);
+            transform: translateY(-2px);
+        }
+
+        .tool-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .tool-button:hover svg {
+            transform: scale(1.1);
+        }
+
+        /* === CANVAS === */
+        main.canvas {
+            grid-area: canvas;
+            position: relative;
+            background: linear-gradient(135deg, #0a0a10 0%, #17171f 100%);
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            margin: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+            transform-origin: top left;
+            perspective: 2000px;
+        }
+
+        .canvas-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 600px;
+            background: radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+                        #14141a;
+            border-radius: 10px;
+            cursor: default;
+            overflow: hidden;
+            transform-origin: 0 0;
+            transform-style: preserve-3d;
+        }
+
+        /* === DRAGGABLE ELEMENTS === */
+        .draggable {
+            position: absolute;
+            user-select: none;
+            cursor: move;
+            border-radius: 8px;
+            box-shadow: 0 0 15px var(--primary-glow);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: transparent;
+            border: 2px solid transparent;
+            transform-style: preserve-3d;
+        }
+
+        .draggable.selected {
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 25px 5px var(--primary-glow);
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .draggable.text {
+            color: var(--accent-color);
+            font-weight: 700;
+            font-size: 1.4rem;
+            padding: 8px 12px;
+            white-space: nowrap;
+            user-select: text;
+            cursor: text;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            text-shadow: 0 0 10px var(--primary-glow);
+            border-radius: 6px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .draggable.image img {
+            max-width: 100%;
+            max-height: 100%;
+            user-select: none;
+            pointer-events: none;
+            display: block;
+            border-radius: 6px;
+        }
+
+        .draggable.video video {
+            max-width: 100%;
+            max-height: 100%;
+            user-select: none;
+            pointer-events: none;
+            display: block;
+            border-radius: 6px;
+        }
+
+        .draggable.shape {
+            background: var(--accent-color);
+            opacity: 0.8;
+            user-select: none;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .draggable.cube {
+            background: var(--accent-color);
+            opacity: 0.8;
+            user-select: none;
+            box-shadow: 0 0 20px var(--primary-glow);
+            position: relative;
+        }
+
+        .draggable.cube::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: rgba(0, 255, 255, 0.2);
+            transform: translateZ(-20px);
+            border-radius: 8px;
+        }
+
+        /* === RESIZERS === */
+        .resizer {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: var(--primary-glow);
+            border: 2px solid var(--bg-dark);
+            border-radius: 50%;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .draggable.selected .resizer {
+            opacity: 1;
+        }
+
+        .resizer:hover {
+            transform: scale(1.3);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* === PROPERTIES PANEL === */
+        aside.properties {
+            grid-area: properties;
+            background: var(--panel-bg);
+            padding: 1.5rem;
+            border-left: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 0.9rem;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+            max-height: calc(100vh - 200px);
+        }
+
+        aside.properties h2 {
+            color: var(--primary-glow);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.8rem;
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+        }
+
+        .property-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .property-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .property-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        label {
+            color: var(--accent-color);
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.3rem;
+        }
+
+        input[type="text"], input[type="number"], select, input[type="range"], input[type="color"] {
+            background: #101018;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-light);
+            padding: 8px 12px;
+            font-family: var(--font-family);
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus, input[type="range"]:focus, input[type="color"]:focus {
+            outline: none;
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-glow);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--primary-glow);
+            border: none;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            padding: 2px;
+            cursor: pointer;
+        }
+
+        .preset-button {
+            background: transparent;
+            border: 1px solid var(--primary-glow);
+            color: var(--accent-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .preset-button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        /* === LAYERS PANEL === */
+        aside.layers {
+            grid-area: layers;
+            background: var(--panel-bg);
+            border-top: 2px solid var(--border-color);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            color: var(--accent-color);
+            user-select: none;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .layers-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .layers-header h3 {
+            margin: 0;
+            color: var(--primary-glow);
+            font-size: 1.1rem;
+        }
+
+        .layers-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+        }
+
+        .layer-item {
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            min-width: 100px;
+            justify-content: center;
+        }
+
+        .layer-item:hover {
+            background: var(--hover-bg);
+            transform: translateY(-2px);
+        }
+
+        .layer-item.selected {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .layer-item .layer-icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* === ZOOM CONTROLS === */
+        .zoom-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .zoom-controls button {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            color: var(--primary-glow);
+            transition: all 0.3s ease;
+        }
+
+        .zoom-controls button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            transform: scale(1.1);
+        }
+
+        .zoom-level {
+            color: var(--accent-color);
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* === NOTIFICATIONS === */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--panel-bg);
+            border: 2px solid var(--primary-glow);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            color: var(--text-light);
+            box-shadow: 0 0 20px var(--primary-glow);
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-color: var(--success-color);
+            box-shadow: 0 0 20px var(--success-color);
+        }
+
+        .notification.error {
+            border-color: var(--error-color);
+            box-shadow: 0 0 20px var(--error-color);
+        }
+
+        /* === LOADING SPINNER === */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            color: var(--primary-glow);
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-glow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .properties {
+                display: none;
+            }
+            .sidebar {
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 1rem;
+            }
+            .tool-button {
+                min-width: 120px;
+            }
+        }
+
+        /* === ACCESSIBILITY === */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 15px var(--primary-glow); }
+            50% { box-shadow: 0 0 25px var(--primary-glow); }
+        }
+
+        .glow-animation {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes float3d {
+            0%, 100% { transform: translateZ(0px) rotateY(0deg); }
+            50% { transform: translateZ(20px) rotateY(180deg); }
+        }
+
+        .float-3d {
+            animation: float3d 4s ease-in-out infinite;
+        }
+
+        @keyframes spin3d {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+        }
+
+        .spin-3d {
+            animation: spin3d 6s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <header>
+        <div class="title">
+            <div class="logo">E</div>
+            editIQ 2.0 — 3D Enhanced
+        </div>
+        <button id="btn-undo" title="Undo (Ctrl+Z)">↶ Undo</button>
+        <button id="btn-redo" title="Redo (Ctrl+Y)">↷ Redo</button>
+        <button id="btn-new" title="New Project">🗎 New</button>
+        <button id="btn-save" title="Save Project">💾 Save</button>
+        <button id="btn-export-png" title="Export as PNG">🖼️ PNG</button>
+        <button id="btn-export-mp4" title="Export as MP4">🎬 MP4</button>
+        <select id="theme-switcher" title="Switch Theme">
+            <option value="default">Theme: Cyan</option>
+            <option value="purple">Theme: Purple</option>
+            <option value="red">Theme: Red</option>
+            <option value="green">Theme: Green</option>
+        </select>
+    </header>
+
+    <!-- SIDEBAR TOOLS -->
+    <aside class="sidebar" role="toolbar" aria-label="Editor Tools">
+        <h3>2D Elements</h3>
+        <div class="tool-button" id="add-text" tabindex="0" title="Add Text Element">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 17v-2h8v2H4zm0-6V9h12v2H4zm0-4V5h16v2H4z"/>
+            </svg>
+            Text
+        </div>
+        <div class="tool-button" id="add-shape" tabindex="0" title="Add Circle Shape">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="6"/>
+            </svg>
+            Circle
+        </div>
+        <div class="tool-button" id="add-rectangle" tabindex="0" title="Add Rectangle">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+            Rectangle
+        </div>
+
+        <h3>3D Elements</h3>
+        <div class="tool-button" id="add-cube" tabindex="0" title="Add 3D Cube">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            3D Cube
+        </div>
+        <div class="tool-button" id="add-image" tabindex="0" title="Add Image Element">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8" cy="8" r="1.5"/>
+                <path d="M21 15l-5-5-5 5"/>
+            </svg>
+            Image
+            <input type="file" id="file-image" accept="image/*" style="display:none" />
+        </div>
+        <div class="tool-button" id="add-video" tabindex="0" title="Add Video Element">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 10.5V7c0-1.104-.896-2-2-2H5c-1.104 0-2 .896-2 2v10c0 1.104.896 2 2 2h10c1.104 0 2-.896 2-2v-3.5l4 4v-11l-4 4z"/>
+            </svg>
+            Video
+            <input type="file" id="file-video" accept="video/*" style="display:none" />
+        </div>
+    </aside>
+
+    <!-- MAIN CANVAS -->
+    <main class="canvas" tabindex="0" aria-label="Editing Canvas">
+        <div class="canvas-inner" id="canvas"></div>
+    </main>
+
+    <!-- PROPERTIES PANEL -->
+    <aside class="properties" aria-label="Properties Panel">
+        <h2>Properties</h2>
+        <div class="property-group">
+            <label for="prop-name">Element Name</label>
+            <input type="text" id="prop-name" placeholder="Element name" />
+        </div>
+
+        <h2>Position & Size</h2>
+        <div class="property-row">
+            <div class="property-group">
+                <label for="prop-x">X Position</label>
+                <input type="number" id="prop-x" />
+            </div>
+            <div class="property-group">
+                <label for="prop-y">Y Position</label>
+                <input type="number" id="prop-y" />
+            </div>
+        </div>
+        <div class="property-row">
+            <div class="property-group">
+                <label for="prop-width">Width</label>
+                <input type="number" id="prop-width" />
+            </div>
+            <div class="property-group">
+                <label for="prop-height">Height</label>
+                <input type="number" id="prop-height" />
+            </div>
+        </div>
+
+        <h2>2D Transform</h2>
+        <div class="property-group">
+            <label for="prop-rotation">Rotation (degrees)</label>
+            <input type="range" id="prop-rotation" min="0" max="360" step="1" value="0" />
+        </div>
+        <div class="property-row">
+            <div class="property-group">
+                <label for="prop-scale-x">Scale X</label>
+                <input type="range" id="prop-scale-x" min="0.1" max="3" step="0.1" value="1" />
+            </div>
+            <div class="property-group">
+                <label for="prop-scale-y">Scale Y</label>
+                <input type="range" id="prop-scale-y" min="0.1" max="3" step="0.1" value="1" />
+            </div>
+        </div>
+        <div class="property-row">
+            <div class="property-group">
+                <label for="prop-skew-x">Skew X</label>
+                <input type="range" id="prop-skew-x" min="-45" max="45" step="1" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-skew-y">Skew Y</label>
+                <input type="range" id="prop-skew-y" min="-45" max="45" step="1" value="0" />
+            </div>
+        </div>
+
+        <h2>3D Transform</h2>
+        <div class="property-row-3">
+            <div class="property-group">
+                <label for="prop-rotate-x">Rotate X</label>
+                <input type="range" id="prop-rotate-x" min="0" max="360" step="1" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-rotate-y">Rotate Y</label>
+                <input type="range" id="prop-rotate-y" min="0" max="360" step="1" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-rotate-z">Rotate Z</label>
+                <input type="range" id="prop-rotate-z" min="0" max="360" step="1" value="0" />
+            </div>
+        </div>
+        <div class="property-row">
+            <div class="property-group">
+                <label for="prop-translate-z">Translate Z</label>
+                <input type="range" id="prop-translate-z" min="-200" max="200" step="5" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-perspective">Perspective</label>
+                <input type="range" id="prop-perspective" min="100" max="3000" step="50" value="1000" />
+            </div>
+        </div>
+
+        <h2>3D Presets</h2>
+        <div class="preset-grid">
+            <button class="preset-button" id="preset-flip">Flip Card</button>
+            <button class="preset-button" id="preset-cube">Cube Spin</button>
+            <button class="preset-button" id="preset-float">Float 3D</button>
+            <button class="preset-button" id="preset-reset">Reset 3D</button>
+        </div>
+
+        <h2>Text Properties</h2>
+        <div class="property-group" id="text-content-group" style="display: none;">
+            <label for="prop-text">Text Content</label>
+            <input type="text" id="prop-text" />
+        </div>
+        <div class="property-group" id="text-font-size-group" style="display: none;">
+            <label for="prop-font-size">Font Size</label>
+            <input type="range" id="prop-font-size" min="10" max="100" step="1" value="24" />
+        </div>
+        <div class="property-group" id="text-color-group" style="display: none;">
+            <label for="prop-text-color">Text Color</label>
+            <input type="color" id="prop-text-color" value="#00ffff" />
+        </div>
+        <div class="property-group" id="text-bg-group" style="display: none;">
+            <label for="prop-bg-color">Background Color</label>
+            <input type="color" id="prop-bg-color" value="#000000" />
+        </div>
+        <div class="property-group" id="text-border-group" style="display: none;">
+            <label for="prop-border-color">Border Color</label>
+            <input type="color" id="prop-border-color" value="#00ffff" />
+        </div>
+        <div class="property-group" id="text-border-width-group" style="display: none;">
+            <label for="prop-border-width">Border Width</label>
+            <input type="range" id="prop-border-width" min="0" max="10" step="1" value="2" />
+        </div>
+        <div class="property-group" id="text-radius-group" style="display: none;">
+            <label for="prop-radius">Border Radius</label>
+            <input type="range" id="prop-radius" min="0" max="30" step="1" value="6" />
+        </div>
+
+        <h2>Appearance</h2>
+        <div class="property-group">
+            <label for="prop-opacity">Opacity</label>
+            <input type="range" id="prop-opacity" min="0" max="100" step="1" value="100" />
+        </div>
+        <div class="property-group" id="color-group" style="display: none;">
+            <label for="prop-color">Color</label>
+            <input type="color" id="prop-color" value="#00ffff" />
+        </div>
+
+        <h2>Filters</h2>
+        <div class="property-group">
+            <label for="filter-brightness">Brightness</label>
+            <input type="range" id="filter-brightness" min="0" max="200" value="100" />
+        </div>
+        <div class="property-group">
+            <label for="filter-contrast">Contrast</label>
+            <input type="range" id="filter-contrast" min="0" max="200" value="100" />
+        </div>
+        <div class="property-group">
+            <label for="filter-saturate">Saturation</label>
+            <input type="range" id="filter-saturate" min="0" max="300" value="100" />
+        </div>
+        <div class="property-group">
+            <label for="filter-blur">Blur</label>
+            <input type="range" id="filter-blur" min="0" max="20" value="0" />
+        </div>
+        <div class="property-group">
+            <label for="filter-hue">Hue Rotate</label>
+            <input type="range" id="filter-hue" min="0" max="360" value="0" />
+        </div>
+    </aside>
+
+    <!-- LAYERS PANEL -->
+    <aside class="layers" aria-label="Layers Panel">
+        <div class="layers-header">
+            <h3>Layers</h3>
+            <div class="zoom-controls">
+                <button id="zoom-out" title="Zoom Out">−</button>
+                <div class="zoom-level" id="zoom-level">100%</div>
+                <button id="zoom-in" title="Zoom In">+</button>
+                <button id="zoom-reset" title="Reset Zoom">⌂</button>
+            </div>
+        </div>
+        <div class="layers-content" id="layers-content">
+            <!-- Layers will be dynamically added here -->
+        </div>
+    </aside>
+
+    <!-- LOADING INDICATOR -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Processing...</div>
+    </div>
+
+    <!-- NOTIFICATION CONTAINER -->
+    <div id="notification-container"></div>
+
+    <script>
+        // === GLOBALS ===
+        const canvas = document.getElementById('canvas');
+        const addTextBtn = document.getElementById('add-text');
+        const addShapeBtn = document.getElementById('add-shape');
+        const addImageBtn = document.getElementById('add-image');
+        const addVideoBtn = document.getElementById('add-video');
+        const addRectangleBtn = document.getElementById('add-rectangle');
+        const addCubeBtn = document.getElementById('add-cube');
+        const fileImageInput = document.getElementById('file-image');
+        const fileVideoInput = document.getElementById('file-video');
+
+        // Property controls
+        const propName = document.getElementById('prop-name');
+        const propX = document.getElementById('prop-x');
+        const propY = document.getElementById('prop-y');
+        const propWidth = document.getElementById('prop-width');
+        const propHeight = document.getElementById('prop-height');
+        const propText = document.getElementById('prop-text');
+        const propRotation = document.getElementById('prop-rotation');
+        const propOpacity = document.getElementById('prop-opacity');
+        const propColor = document.getElementById('prop-color');
+
+        // Enhanced text controls
+        const propFontSize = document.getElementById('prop-font-size');
+        const propTextColor = document.getElementById('prop-text-color');
+        const propBgColor = document.getElementById('prop-bg-color');
+        const propBorderColor = document.getElementById('prop-border-color');
+        const propBorderWidth = document.getElementById('prop-border-width');
+        const propRadius = document.getElementById('prop-radius');
+
+        // 3D Transform controls
+        const propRotateX = document.getElementById('prop-rotate-x');
+        const propRotateY = document.getElementById('prop-rotate-y');
+        const propRotateZ = document.getElementById('prop-rotate-z');
+        const propTranslateZ = document.getElementById('prop-translate-z');
+        const propPerspective = document.getElementById('prop-perspective');
+        const propScaleX = document.getElementById('prop-scale-x');
+        const propScaleY = document.getElementById('prop-scale-y');
+        const propSkewX = document.getElementById('prop-skew-x');
+        const propSkewY = document.getElementById('prop-skew-y');
+
+        // Filter controls
+        const filterBrightness = document.getElementById('filter-brightness');
+        const filterContrast = document.getElementById('filter-contrast');
+        const filterSaturate = document.getElementById('filter-saturate');
+        const filterBlur = document.getElementById('filter-blur');
+        const filterHue = document.getElementById('filter-hue');
+
+        // Preset buttons
+        const presetFlip = document.getElementById('preset-flip');
+        const presetCube = document.getElementById('preset-cube');
+        const presetFloat = document.getElementById('preset-float');
+        const presetReset = document.getElementById('preset-reset');
+
+        // UI elements
+        const layersContent = document.getElementById('layers-content');
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const zoomLevel = document.getElementById('zoom-level');
+        const loading = document.getElementById('loading');
+
+        // State
+        let selectedElement = null;
+        let currentZoom = 1;
+        let elementCounter = 0;
+        let layers = [];
+        let history = [];
+        let historyIndex = -1;
+        let isDragging = false;
+        let isResizing = false;
+
+        // === UTILITY FUNCTIONS ===
+        function generateId() {
+            return 'element_' + (++elementCounter);
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.getElementById('notification-container').appendChild(notification);
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function saveState() {
+            const state = {
+                elements: layers.map(el => ({
+                    id: el.id,
+                    type: el.dataset.type,
+                    style: el.style.cssText,
+                    content: el.textContent || '',
+                    src: el.querySelector('img')?.src || el.querySelector('video')?.src || '',
+                    userData: el.userData || {}
+                }))
+            };
+            history = history.slice(0, historyIndex + 1);
+            history.push(JSON.stringify(state));
+            historyIndex++;
+            if (history.length > 50) {
+                history.shift();
+                historyIndex--;
+            }
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreState(JSON.parse(history[historyIndex]));
+                showNotification('Undone', 'success');
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                restoreState(JSON.parse(history[historyIndex]));
+                showNotification('Redone', 'success');
+            }
+        }
+
+        function restoreState(state) {
+            // Clear canvas
+            canvas.innerHTML = '';
+            layers = [];
+
+            // Restore elements
+            state.elements.forEach(elementData => {
+                const el = createElement(elementData.type, elementData.content, elementData.src);
+                el.id = elementData.id;
+                el.style.cssText = elementData.style;
+                el.userData = elementData.userData || {};
+                canvas.appendChild(el);
+                layers.push(el);
+            });
+
+            renderLayers();
+            if (selectedElement && !document.contains(selectedElement)) {
+                selectedElement = null;
+                clearProperties();
+            }
+        }
+
+        // === DRAGGABLE AND RESIZABLE ===
+        function makeDraggableAndResizable(el) {
+            el.style.position = 'absolute';
+
+            // Dragging
+            let dragOffsetX = 0, dragOffsetY = 0;
+
+            el.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('resizer')) return;
+                e.preventDefault();
+                isDragging = true;
+
+                const rect = el.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+
+                selectElement(el);
+                el.style.zIndex = 1000;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging || selectedElement !== el) return;
+                e.preventDefault();
+
+                const canvasRect = canvas.getBoundingClientRect();
+                let x = (e.clientX - dragOffsetX - canvasRect.left) / currentZoom;
+                let y = (e.clientY - dragOffsetY - canvasRect.top) / currentZoom;
+
+                // Clamp inside canvas
+                x = Math.max(0, Math.min(x, canvas.clientWidth / currentZoom - el.offsetWidth));
+                y = Math.max(0, Math.min(y, canvas.clientHeight / currentZoom - el.offsetHeight));
+
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                updateProperties(el);
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    if (selectedElement) {
+                        selectedElement.style.zIndex = layers.indexOf(selectedElement) + 10;
+                        saveState();
+                    }
+                }
+            });
+
+            // Create resizers
+            createResizers(el);
+        }
+
+        function createResizers(el) {
+            const corners = ['nw', 'ne', 'sw', 'se'];
+            corners.forEach(corner => {
+                const resizer = document.createElement('div');
+                resizer.className = 'resizer ' + corner;
+                resizer.style.cursor = corner + '-resize';
+
+                switch(corner) {
+                    case 'nw': resizer.style.left = '-7px'; resizer.style.top = '-7px'; break;
+                    case 'ne': resizer.style.right = '-7px'; resizer.style.top = '-7px'; break;
+                    case 'sw': resizer.style.left = '-7px'; resizer.style.bottom = '-7px'; break;
+                    case 'se': resizer.style.right = '-7px'; resizer.style.bottom = '-7px'; break;
+                }
+
+                el.appendChild(resizer);
+
+                resizer.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    isResizing = true;
+
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startWidth = el.offsetWidth;
+                    const startHeight = el.offsetHeight;
+                    const startLeft = parseInt(el.style.left) || 0;
+                    const startTop = parseInt(el.style.top) || 0;
+
+                    function onMouseMove(ev) {
+                        const dx = (ev.clientX - startX) / currentZoom;
+                        const dy = (ev.clientY - startY) / currentZoom;
+
+                        if (corner.includes('e')) {
+                            el.style.width = Math.max(30, startWidth + dx) + 'px';
+                        }
+                        if (corner.includes('s')) {
+                            el.style.height = Math.max(30, startHeight + dy) + 'px';
+                        }
+                        if (corner.includes('w')) {
+                            const newWidth = Math.max(30, startWidth - dx);
+                            el.style.width = newWidth + 'px';
+                            el.style.left = (startLeft + dx) + 'px';
+                        }
+                        if (corner.includes('n')) {
+                            const newHeight = Math.max(30, startHeight - dy);
+                            el.style.height = newHeight + 'px';
+                            el.style.top = (startTop + dy) + 'px';
+                        }
+
+                        updateProperties(el);
+                    }
+
+                    function onMouseUp() {
+                        isResizing = false;
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                        saveState();
+                    }
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+            });
+        }
+
+        // === ELEMENT CREATION ===
+        function createElement(type, content = '', src = '') {
+            const el = document.createElement('div');
+            el.id = generateId();
+            el.classList.add('draggable', type);
+            el.dataset.type = type;
+
+            // Initialize userData for enhanced properties
+            el.userData = {
+                text: content || 'New Text',
+                options: {
+                    size: 24,
+                    color: '#00ffff',
+                    bg: 'rgba(0, 0, 0, 0.3)',
+                    border: '#00ffff',
+                    borderWidth: 2,
+                    radius: 6
+                }
+            };
+
+            switch(type) {
+                case 'text':
+                    el.textContent = content || 'New Text';
+                    el.style.width = 'auto';
+                    el.style.height = 'auto';
+                    el.style.minWidth = '100px';
+                    el.style.fontSize = el.userData.options.size + 'px';
+                    el.style.color = el.userData.options.color;
+                    el.style.backgroundColor = el.userData.options.bg;
+                    el.style.border = `${el.userData.options.borderWidth}px solid ${el.userData.options.border}`;
+                    el.style.borderRadius = el.userData.options.radius + 'px';
+                    break;
+                case 'shape':
+                    el.style.width = '100px';
+                    el.style.height = '100px';
+                    el.style.borderRadius = '50%';
+                    break;
+                case 'rectangle':
+                    el.style.width = '150px';
+                    el.style.height = '100px';
+                    el.style.borderRadius = '8px';
+                    break;
+                case 'cube':
+                    el.style.width = '120px';
+                    el.style.height = '120px';
+                    el.style.borderRadius = '8px';
+                    el.style.transformStyle = 'preserve-3d';
+                    break;
+                case 'image':
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.alt = 'Image';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    el.appendChild(img);
+                    el.style.width = '200px';
+                    el.style.height = '150px';
+                    break;
+                case 'video':
+                    const video = document.createElement('video');
+                    video.src = src;
+                    video.controls = true;
+                    video.muted = true;
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    el.appendChild(video);
+                    el.style.width = '320px';
+                    el.style.height = '180px';
+                    break;
+            }
+
+            // Default positioning
+            el.style.left = (50 + layers.length * 20) + 'px';
+            el.style.top = (50 + layers.length * 20) + 'px';
+
+            makeDraggableAndResizable(el);
+            return el;
+        }
+
+        // === ELEMENT SELECTION ===
+        function selectElement(el) {
+            if (selectedElement) {
+                selectedElement.classList.remove('selected');
+            }
+            selectedElement = el;
+            selectedElement.classList.add('selected');
+            updateProperties(el);
+            updateLayersSelection(el);
+        }
+
+        function updateProperties(el) {
+            if (!el) return;
+
+            const x = parseInt(el.style.left) || 0;
+            const y = parseInt(el.style.top) || 0;
+            const width = el.offsetWidth;
+            const height = el.offsetHeight;
+            const rotation = getRotation(el);
+            const opacity = parseFloat(el.style.opacity || 1) * 100;
+
+            propName.value = el.id;
+            propX.value = x;
+            propY.value = y;
+            propWidth.value = width;
+            propHeight.value = height;
+            propRotation.value = rotation;
+            propOpacity.value = opacity;
+
+            // Get 3D transform values
+            const transform = el.style.transform || '';
+            propRotateX.value = getTransformValue(transform, 'rotateX', 0);
+            propRotateY.value = getTransformValue(transform, 'rotateY', 0);
+            propRotateZ.value = getTransformValue(transform, 'rotateZ', 0);
+            propTranslateZ.value = getTransformValue(transform, 'translateZ', 0);
+            propScaleX.value = getTransformValue(transform, 'scaleX', 1);
+            propScaleY.value = getTransformValue(transform, 'scaleY', 1);
+            propSkewX.value = getTransformValue(transform, 'skewX', 0);
+            propSkewY.value = getTransformValue(transform, 'skewY', 0);
+
+            // Show/hide relevant controls
+            const textGroups = [
+                'text-content-group', 'text-font-size-group', 'text-color-group',
+                'text-bg-group', 'text-border-group', 'text-border-width-group', 'text-radius-group'
+            ];
+            const colorGroup = document.getElementById('color-group');
+
+            // Hide all text groups first
+            textGroups.forEach(groupId => {
+                document.getElementById(groupId).style.display = 'none';
+            });
+
+            if (el.dataset.type === 'text') {
+                // Show text-specific controls
+                textGroups.forEach(groupId => {
+                    document.getElementById(groupId).style.display = 'block';
+                });
+
+                // Update text properties
+                propText.value = el.userData.text || el.textContent;
+                propFontSize.value = el.userData.options.size || 24;
+                propTextColor.value = el.userData.options.color || '#00ffff';
+                propBgColor.value = rgbToHex(el.userData.options.bg || 'rgba(0, 0, 0, 0.3)');
+                propBorderColor.value = el.userData.options.border || '#00ffff';
+                propBorderWidth.value = el.userData.options.borderWidth || 2;
+                propRadius.value = el.userData.options.radius || 6;
+
+                colorGroup.style.display = 'none';
+            } else {
+                if (el.dataset.type === 'shape' || el.dataset.type === 'rectangle' || el.dataset.type === 'cube') {
+                    colorGroup.style.display = 'block';
+                    propColor.value = rgbToHex(getComputedStyle(el).backgroundColor);
+                } else {
+                    colorGroup.style.display = 'none';
+                }
+            }
+
+            // Update filters
+            const filterStyle = el.style.filter || '';
+            filterBrightness.value = getFilterValue(filterStyle, 'brightness', 1) * 100;
+            filterContrast.value = getFilterValue(filterStyle, 'contrast', 1) * 100;
+            filterSaturate.value = getFilterValue(filterStyle, 'saturate', 1) * 100;
+            filterBlur.value = getFilterValue(filterStyle, 'blur', 0);
+            filterHue.value = getFilterValue(filterStyle, 'hue-rotate', 0);
+        }
+
+        function applyPropertiesToElement() {
+            if (!selectedElement) return;
+
+            const x = parseInt(propX.value) || 0;
+            const y = parseInt(propY.value) || 0;
+            const w = parseInt(propWidth.value) || selectedElement.offsetWidth;
+            const h = parseInt(propHeight.value) || selectedElement.offsetHeight;
+            const rotation = parseInt(propRotation.value) || 0;
+            const opacity = parseInt(propOpacity.value) || 100;
+
+            // 3D Transform values
+            const rotateX = parseInt(propRotateX.value) || 0;
+            const rotateY = parseInt(propRotateY.value) || 0;
+            const rotateZ = parseInt(propRotateZ.value) || 0;
+            const translateZ = parseInt(propTranslateZ.value) || 0;
+            const scaleX = parseFloat(propScaleX.value) || 1;
+            const scaleY = parseFloat(propScaleY.value) || 1;
+            const skewX = parseInt(propSkewX.value) || 0;
+            const skewY = parseInt(propSkewY.value) || 0;
+            const perspective = parseInt(propPerspective.value) || 1000;
+
+            selectedElement.style.left = x + 'px';
+            selectedElement.style.top = y + 'px';
+            selectedElement.style.width = w + 'px';
+            selectedElement.style.height = h + 'px';
+            selectedElement.style.opacity = opacity / 100;
+
+            // Apply 3D transforms
+            const transformString = `
+                perspective(${perspective}px)
+                rotateX(${rotateX}deg)
+                rotateY(${rotateY}deg)
+                rotateZ(${rotateZ}deg)
+                translateZ(${translateZ}px)
+                scaleX(${scaleX})
+                scaleY(${scaleY})
+                skewX(${skewX}deg)
+                skewY(${skewY}deg)
+                rotate(${rotation}deg)
+            `.replace(/\s+/g, ' ').trim();
+
+            selectedElement.style.transform = transformString;
+            selectedElement.style.transformStyle = 'preserve-3d';
+
+            // Apply filters
+            const brightness = filterBrightness.value;
+            const contrast = filterContrast.value;
+            const saturate = filterSaturate.value;
+            const blur = filterBlur.value;
+            const hue = filterHue.value;
+
+            selectedElement.style.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) blur(${blur}px) hue-rotate(${hue}deg)`;
+
+            // Apply text properties
+            if (selectedElement.dataset.type === 'text') {
+                updateTextElement();
+            } else if (selectedElement.dataset.type === 'shape' || selectedElement.dataset.type === 'rectangle' || selectedElement.dataset.type === 'cube') {
+                selectedElement.style.backgroundColor = propColor.value;
+            }
+
+            // Update element name
+            if (propName.value !== selectedElement.id) {
+                selectedElement.id = propName.value;
+                renderLayers();
+            }
+        }
+
+        function updateTextElement() {
+            if (!selectedElement || selectedElement.dataset.type !== 'text') return;
+
+            const text = propText.value;
+            const fontSize = parseInt(propFontSize.value);
+            const textColor = propTextColor.value;
+            const bgColor = propBgColor.value;
+            const borderColor = propBorderColor.value;
+            const borderWidth = parseInt(propBorderWidth.value);
+            const radius = parseInt(propRadius.value);
+
+            // Update userData
+            selectedElement.userData.text = text;
+            selectedElement.userData.options = {
+                size: fontSize,
+                color: textColor,
+                bg: bgColor,
+                border: borderColor,
+                borderWidth: borderWidth,
+                radius: radius
+            };
+
+            // Apply styles
+            selectedElement.textContent = text;
+            selectedElement.style.fontSize = fontSize + 'px';
+            selectedElement.style.color = textColor;
+            selectedElement.style.backgroundColor = bgColor;
+            selectedElement.style.border = `${borderWidth}px solid ${borderColor}`;
+            selectedElement.style.borderRadius = radius + 'px';
+        }
+
+        function clearProperties() {
+            propName.value = '';
+            propX.value = '';
+            propY.value = '';
+            propWidth.value = '';
+            propHeight.value = '';
+            propRotation.value = '0';
+            propOpacity.value = '100';
+            propText.value = '';
+
+            // Clear enhanced text properties
+            propFontSize.value = '24';
+            propTextColor.value = '#00ffff';
+            propBgColor.value = '#000000';
+            propBorderColor.value = '#00ffff';
+            propBorderWidth.value = '2';
+            propRadius.value = '6';
+
+            // Clear 3D properties
+            propRotateX.value = '0';
+            propRotateY.value = '0';
+            propRotateZ.value = '0';
+            propTranslateZ.value = '0';
+            propScaleX.value = '1';
+            propScaleY.value = '1';
+            propSkewX.value = '0';
+            propSkewY.value = '0';
+            propPerspective.value = '1000';
+
+            // Clear filters
+            filterBrightness.value = '100';
+            filterContrast.value = '100';
+            filterSaturate.value = '100';
+            filterBlur.value = '0';
+            filterHue.value = '0';
+
+            // Hide all text groups
+            const textGroups = [
+                'text-content-group', 'text-font-size-group', 'text-color-group',
+                'text-bg-group', 'text-border-group', 'text-border-width-group', 'text-radius-group'
+            ];
+            textGroups.forEach(groupId => {
+                document.getElementById(groupId).style.display = 'none';
+            });
+            document.getElementById('color-group').style.display = 'none';
+        }
+
+        // === 3D PRESET FUNCTIONS ===
+        function apply3DPreset(preset) {
+            if (!selectedElement) return;
+
+            switch(preset) {
+                case 'flip':
+                    propRotateY.value = '180';
+                    propTranslateZ.value = '50';
+                    break;
+                case 'cube':
+                    selectedElement.classList.add('spin-3d');
+                    setTimeout(() => selectedElement.classList.remove('spin-3d'), 6000);
+                    return;
+                case 'float':
+                    selectedElement.classList.add('float-3d');
+                    setTimeout(() => selectedElement.classList.remove('float-3d'), 4000);
+                    return;
+                case 'reset':
+                    propRotateX.value = '0';
+                    propRotateY.value = '0';
+                    propRotateZ.value = '0';
+                    propTranslateZ.value = '0';
+                    propScaleX.value = '1';
+                    propScaleY.value = '1';
+                    propSkewX.value = '0';
+                    propSkewY.value = '0';
+                    selectedElement.classList.remove('spin-3d', 'float-3d');
+                    break;
+            }
+            applyPropertiesToElement();
+            saveState();
+        }
+
+        // === UTILITY FUNCTIONS ===
+        function getRotation(el) {
+            const st = window.getComputedStyle(el);
+            const tr = st.getPropertyValue("transform");
+            if (tr === "none") return 0;
+            const values = tr.split('(')[1].split(')')[0].split(',');
+            const a = values[0];
+            const b = values[1];
+            let angle = Math.round(Math.atan2(b, a) * (180/Math.PI));
+            if (angle < 0) angle += 360;
+            return angle;
+        }
+
+        function getTransformValue(transformString, property, defaultValue) {
+            const regex = new RegExp(`${property}\$$([^)]+)\$$`);
+            const match = transformString.match(regex);
+            if (!match) return defaultValue;
+            let value = match[1];
+            if (value.endsWith('deg')) value = parseFloat(value);
+            else if (value.endsWith('px')) value = parseFloat(value);
+            else value = parseFloat(value);
+            return value || defaultValue;
+        }
+
+        function getFilterValue(filterString, filterName, defaultValue) {
+            const regex = new RegExp(`${filterName}\$$([^)]+)\$$`);
+            const match = filterString.match(regex);
+            if (!match) return defaultValue;
+            let val = match[1];
+            if (val.endsWith('%')) val = val.slice(0, -1) / 100;
+            else if (val.endsWith('px')) val = parseFloat(val);
+            else if (val.endsWith('deg')) val = parseFloat(val);
+            else val = parseFloat(val);
+            return val;
+        }
+
+        function rgbToHex(rgb) {
+            if (rgb.startsWith('#')) return rgb;
+            const result = rgb.match(/\d+/g);
+            if (!result) return '#00ffff';
+            return '#' + result.map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+        }
+
+        // === LAYERS MANAGEMENT ===
+        function addLayer(el) {
+            layers.push(el);
+            renderLayers();
+            saveState();
+        }
+
+        function removeLayer(el) {
+            layers = layers.filter(l => l !== el);
+            renderLayers();
+        }
+
+        function renderLayers() {
+            layersContent.innerHTML = '';
+            [...layers].reverse().forEach((el, i) => {
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item';
+                layerItem.innerHTML = `
+                    <svg class="layer-icon" viewBox="0 0 24 24">
+                        ${getLayerIcon(el.dataset.type)}
+                    </svg>
+                    ${el.id}
+                `;
+                if (el === selectedElement) {
+                    layerItem.classList.add('selected');
+                }
+                layerItem.addEventListener('click', () => selectElement(el));
+                layersContent.appendChild(layerItem);
+            });
+
+            // Update z-index
+            layers.forEach((el, idx) => {
+                el.style.zIndex = idx + 10;
+            });
+        }
+
+        function getLayerIcon(type) {
+            switch(type) {
+                case 'text': return '<path d="M4 17v-2h8v2H4zm0-6V9h12v2H4zm0-4V5h16v2H4z"/>';
+                case 'shape': return '<circle cx="12" cy="12" r="6"/>';
+                case 'rectangle': return '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>';
+                case 'cube': return '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>';
+                case 'image': return '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5"/><path d="M21 15l-5-5-5 5"/>';
+                case 'video': return '<path d="M17 10.5V7c0-1.104-.896-2-2-2H5c-1.104 0-2 .896-2 2v10c0 1.104.896 2 2 2h10c1.104 0 2-.896 2-2v-3.5l4 4v-11l-4 4z"/>';
+                default: return '<circle cx="12" cy="12" r="6"/>';
+            }
+        }
+
+        function updateLayersSelection(el) {
+            const layerItems = layersContent.querySelectorAll('.layer-item');
+            layerItems.forEach(item => item.classList.remove('selected'));
+            if (!el) return;
+            const idx = layers.findIndex(l => l === el);
+            if (idx === -1) return;
+            const reverseIdx = layers.length - 1 - idx;
+            if (layerItems[reverseIdx]) {
+                layerItems[reverseIdx].classList.add('selected');
+            }
+        }
+
+        // === ZOOM CONTROLS ===
+        function setZoom(level) {
+            currentZoom = Math.max(0.1, Math.min(3, level));
+            canvas.style.transform = `scale(${currentZoom})`;
+            zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        function zoomIn() {
+            setZoom(currentZoom + 0.1);
+        }
+
+        function zoomOut() {
+            setZoom(currentZoom - 0.1);
+        }
+
+        function zoomReset() {
+            setZoom(1);
+        }
+
+        // === ENHANCED EXPORT FUNCTIONS ===
+        async function exportSnapshot() {
+            showLoading();
+            try {
+                const rect = canvas.getBoundingClientRect();
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+
+                const offscreen = document.createElement('canvas');
+                offscreen.width = width;
+                offscreen.height = height;
+                const ctx = offscreen.getContext('2d');
+
+                // Background
+                ctx.fillStyle = '#14141a';
+                ctx.fillRect(0, 0, width, height);
+
+                // Draw elements in layer order
+                for (let el of layers) {
+                    await drawElementToCanvas(ctx, el);
+                }
+
+                const dataURL = offscreen.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = 'editIQ-3d-export.png';
+                link.href = dataURL;
+                link.click();
+
+                showNotification('PNG exported successfully!', 'success');
+            } catch (error) {
+                showNotification('Export failed: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function drawElementToCanvas(ctx, el) {
+            const x = parseInt(el.style.left) || 0;
+            const y = parseInt(el.style.top) || 0;
+            const w = el.offsetWidth;
+            const h = el.offsetHeight;
+            const rotation = getRotation(el) * Math.PI / 180;
+            const opacity = parseFloat(el.style.opacity || 1);
+
+            ctx.save();
+            ctx.globalAlpha = opacity;
+
+            // Transform
+            ctx.translate(x + w/2, y + h/2);
+            ctx.rotate(rotation);
+            ctx.translate(-w/2, -h/2);
+
+            // Apply filters (simplified)
+            const filterStr = el.style.filter || '';
+            if (filterStr.includes('brightness')) {
+                const brightness = getFilterValue(filterStr, 'brightness', 1);
+                ctx.filter = `brightness(${brightness})`;
+            }
+
+            // Draw by type
+            switch(el.dataset.type) {
+                case 'text':
+                    const fontSize = el.userData?.options?.size || 24;
+                    const textColor = el.userData?.options?.color || '#00ffff';
+                    const bgColor = el.userData?.options?.bg || 'rgba(0, 0, 0, 0.3)';
+                    const borderColor = el.userData?.options?.border || '#00ffff';
+                    const borderWidth = el.userData?.options?.borderWidth || 2;
+                    const radius = el.userData?.options?.radius || 6;
+
+                    // Draw background
+                    ctx.fillStyle = bgColor;
+                    ctx.fillRect(0, 0, w, h);
+
+                    // Draw border
+                    if (borderWidth > 0) {
+                        ctx.strokeStyle = borderColor;
+                        ctx.lineWidth = borderWidth;
+                        ctx.strokeRect(0, 0, w, h);
+                    }
+
+                    // Draw text
+                    ctx.fillStyle = textColor;
+                    ctx.font = `700 ${fontSize}px Orbitron, sans-serif`;
+                    ctx.textBaseline = 'middle';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(el.textContent, w/2, h/2);
+                    break;
+
+                case 'shape':
+                    ctx.fillStyle = getComputedStyle(el).backgroundColor;
+                    ctx.beginPath();
+                    ctx.ellipse(w/2, h/2, w/2, h/2, 0, 0, 2*Math.PI);
+                    ctx.fill();
+                    break;
+
+                case 'rectangle':
+                case 'cube':
+                    ctx.fillStyle = getComputedStyle(el).backgroundColor;
+                    ctx.fillRect(0, 0, w, h);
+                    break;
+
+                case 'image':
+                    const img = el.querySelector('img');
+                    if (img && img.complete) {
+                        ctx.drawImage(img, 0, 0, w, h);
+                    }
+                    break;
+
+                case 'video':
+                    const video = el.querySelector('video');
+                    if (video && video.readyState >= 2) {
+                        try {
+                            ctx.drawImage(video, 0, 0, w, h);
+                        } catch(e) {
+                            // Video not ready
+                        }
+                    }
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        // === EVENT LISTENERS ===
+        // Tool buttons
+        addTextBtn.addEventListener('click', () => {
+            const el = createElement('text');
+            canvas.appendChild(el);
+            selectElement(el);
+            addLayer(el);
+        });
+
+        addShapeBtn.addEventListener('click', () => {
+            const el = createElement('shape');
+            canvas.appendChild(el);
+            selectElement(el);
+            addLayer(el);
+        });
+
+        addRectangleBtn.addEventListener('click', () => {
+            const el = createElement('rectangle');
+            canvas.appendChild(el);
+            selectElement(el);
+            addLayer(el);
+        });
+
+        addCubeBtn.addEventListener('click', () => {
+            const el = createElement('cube');
+            canvas.appendChild(el);
+            selectElement(el);
+            addLayer(el);
+        });
+
+        addImageBtn.addEventListener('click', () => {
+            fileImageInput.click();
+        });
+
+        addVideoBtn.addEventListener('click', () => {
+            fileVideoInput.click();
+        });
+
+        fileImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            const el = createElement('image', '', url);
+            canvas.appendChild(el);
+            selectElement(el);
+            addLayer(el);
+            fileImageInput.value = '';
+        });
+
+        fileVideoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            const el = createElement('video', '', url);
+            canvas.appendChild(el);
+            selectElement(el);
+            addLayer(el);
+            fileVideoInput.value = '';
+        });
+
+        // Property controls with enhanced text support
+        [propName, propX, propY, propWidth, propHeight, propText, propRotation, propOpacity, propColor,
+         propFontSize, propTextColor, propBgColor, propBorderColor, propBorderWidth, propRadius,
+         propRotateX, propRotateY, propRotateZ, propTranslateZ, propPerspective, propScaleX, propScaleY, 
+         propSkewX, propSkewY, filterBrightness, filterContrast, filterSaturate, filterBlur, filterHue
+        ].forEach(input => {
+            input.addEventListener('input', applyPropertiesToElement);
+        });
+
+        // 3D Preset buttons
+        presetFlip.addEventListener('click', () => apply3DPreset('flip'));
+        presetCube.addEventListener('click', () => apply3DPreset('cube'));
+        presetFloat.addEventListener('click', () => apply3DPreset('float'));
+        presetReset.addEventListener('click', () => apply3DPreset('reset'));
+
+        // Canvas selection
+        canvas.addEventListener('click', (e) => {
+            if (e.target === canvas || e.target.classList.contains('canvas-inner')) {
+                if (selectedElement) {
+                    selectedElement.classList.remove('selected');
+                    selectedElement = null;
+                    clearProperties();
+                    updateLayersSelection(null);
+                }
+            }
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'z':
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            redo();
+                        } else {
+                            undo();
+                        }
+                        break;
+                    case 'y':
+                        e.preventDefault();
+                        redo();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        showNotification('Auto-save enabled', 'success');
+                        break;
+                }
+            } else if (e.key === 'Delete' && selectedElement) {
+                removeLayer(selectedElement);
+                selectedElement.remove();
+                selectedElement = null;
+                clearProperties();
+                saveState();
+            }
+        });
+
+        // Zoom controls
+        document.getElementById('zoom-in').addEventListener('click', zoomIn);
+        document.getElementById('zoom-out').addEventListener('click', zoomOut);
+        document.getElementById('zoom-reset').addEventListener('click', zoomReset);
+
+        // Top bar buttons
+        document.getElementById('btn-undo').addEventListener('click', undo);
+        document.getElementById('btn-redo').addEventListener('click', redo);
+
+        document.getElementById('btn-new').addEventListener('click', () => {
+            if (confirm('Create new project? This will clear the current canvas.')) {
+                canvas.innerHTML = '';
+                layers = [];
+                selectedElement = null;
+                clearProperties();
+                renderLayers();
+                history = [];
+                historyIndex = -1;
+                showNotification('New project created', 'success');
+            }
+        });
+
+        document.getElementById('btn-save').addEventListener('click', () => {
+            const projectData = {
+                elements: layers.map(el => ({
+                    id: el.id,
+                    type: el.dataset.type,
+                    style: el.style.cssText,
+                    content: el.textContent || '',
+                    src: el.querySelector('img')?.src || el.querySelector('video')?.src || '',
+                    userData: el.userData || {}
+                }))
+            };
+            const blob = new Blob([JSON.stringify(projectData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'editIQ-3d-project.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Project saved successfully!', 'success');
+        });
+
+        document.getElementById('btn-export-png').addEventListener('click', exportSnapshot);
+
+        document.getElementById('btn-export-mp4').addEventListener('click', () => {
+            showNotification('MP4 export coming soon!', 'warning');
+        });
+
+        // Theme switcher
+        themeSwitcher.addEventListener('change', (e) => {
+            document.body.classList.remove('theme-purple', 'theme-red', 'theme-green');
+            if (e.target.value !== 'default') {
+                document.body.classList.add('theme-' + e.target.value);
+            }
+            showNotification(`Theme changed to ${e.target.value}`, 'success');
+        });
+
+        // Initialize
+        setZoom(1);
+        saveState(); // Initial state
+        showNotification('editIQ 2.0 — 3D Enhanced loaded successfully!', 'success');
+    </script>
+</body>
+</html>
