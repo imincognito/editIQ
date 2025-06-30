@@ -2,9 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🎬 Advanced Video Editor & Export</title>
-  <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
+  <title>🎥 Advanced Video Editor with 3D</title>
   <style>
     body {
       background: #111;
@@ -14,39 +12,47 @@
       margin: 0;
       padding: 20px;
     }
+
     #editor-container {
       width: 800px;
       height: 450px;
       margin: 20px auto;
+      perspective: 1000px;
       background: #000;
       border: 2px dashed #555;
       position: relative;
       overflow: hidden;
-      perspective: 1000px;
     }
-    video, canvas {
+
+    canvas {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: center;
-      z-index: 1;
+      display: block;
+      transform-style: preserve-3d;
+      transform: rotateX(0deg) rotateY(0deg);
+      transition: transform 0.1s linear;
     }
-    #controls, #export-controls {
+
+    video {
+      display: none;
+    }
+
+    #controls {
       margin-top: 20px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
     }
+
     label {
       font-size: 14px;
     }
-    input[type="range"] {
+
+    input[type="range"], input[type="number"] {
       width: 100px;
     }
+
     button {
       background: #0a84ff;
       color: #fff;
@@ -56,98 +62,106 @@
       border-radius: 4px;
       cursor: pointer;
     }
+
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-    h2 {
-      margin-top: 40px;
-    }
   </style>
+  <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"></script>
 </head>
 <body>
 
-  <h1>🎬 Simple Video Editor & Export</h1>
+  <h1>🎞️ 3D Video Editor</h1>
   <input type="file" id="video-upload" accept="video/*" />
   <button id="play-toggle" disabled>▶️ Play</button>
 
+  <label>⏱ Duration (sec): <input type="number" id="record-duration" min="1" max="30" value="5" /></label>
+  <button id="record-button" disabled>⏺ Record</button>
+  <button id="download-button" disabled>💾 Download</button>
+
   <div id="editor-container">
+    <canvas id="canvas" width="800" height="450"></canvas>
     <video id="video" muted playsinline loop></video>
-    <canvas id="captureCanvas"></canvas>
   </div>
 
   <div id="controls">
-    <label>RotateX <input type="range" id="rotateX" min="-180" max="180" value="0" disabled></label>
-    <label>RotateY <input type="range" id="rotateY" min="-180" max="180" value="0" disabled></label>
+    <label>RotateX <input type="range" id="rotateX" min="-90" max="90" value="0" disabled></label>
+    <label>RotateY <input type="range" id="rotateY" min="-90" max="90" value="0" disabled></label>
     <label>RotateZ <input type="range" id="rotateZ" min="-180" max="180" value="0" disabled></label>
     <label>Scale <input type="range" id="scale" min="0.1" max="2" step="0.1" value="1" disabled></label>
     <label>Blur <input type="range" id="blur" min="0" max="10" value="0" disabled></label>
     <label>Brightness <input type="range" id="brightness" min="0.5" max="2" step="0.1" value="1" disabled></label>
   </div>
 
-  <h2>🎥 Export Options</h2>
-  <div id="export-controls">
-    <button id="start-record" disabled>🔴 Record & Export (MediaRecorder)</button>
-    <button id="stop-record" disabled>⏹ Stop</button>
-    <button id="recordrtc" disabled>🟠 Export with RecordRTC</button>
-    <button id="ffmpegExport" disabled>🟢 Export with FFmpeg</button>
-  </div>
-
   <script>
     const video = document.getElementById('video');
-    const canvas = document.getElementById('captureCanvas');
-    const ctx = canvas.getContext('2d');
-
     const upload = document.getElementById('video-upload');
     const playToggle = document.getElementById('play-toggle');
+    const recordButton = document.getElementById('record-button');
+    const durationInput = document.getElementById('record-duration');
+    const downloadButton = document.getElementById('download-button');
+
     const rotateX = document.getElementById('rotateX');
     const rotateY = document.getElementById('rotateY');
     const rotateZ = document.getElementById('rotateZ');
     const scale = document.getElementById('scale');
     const blur = document.getElementById('blur');
     const brightness = document.getElementById('brightness');
-    const startRecord = document.getElementById('start-record');
-    const stopRecord = document.getElementById('stop-record');
-    const recordrtcBtn = document.getElementById('recordrtc');
-    const ffmpegBtn = document.getElementById('ffmpegExport');
 
     const allControls = [rotateX, rotateY, rotateZ, scale, blur, brightness];
 
-    function applyTransforms() {
-      video.style.transform = `
-        rotateX(${rotateX.value}deg)
-        rotateY(${rotateY.value}deg)
-        rotateZ(${rotateZ.value}deg)
-        scale(${scale.value})
-      `;
-      video.style.filter = `
-        blur(${blur.value}px)
-        brightness(${brightness.value})
-      `;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let recordedBlob = null;
+
+    function drawCanvasLoop() {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(parseFloat(rotateZ.value) * Math.PI / 180);
+      ctx.scale(parseFloat(scale.value), parseFloat(scale.value));
+
+      ctx.filter = `blur(${blur.value}px) brightness(${brightness.value})`;
+
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+
+      if (vw && vh) {
+        const aspectRatio = vw / vh;
+        let drawWidth = canvas.width;
+        let drawHeight = drawWidth / aspectRatio;
+        if (drawHeight > canvas.height) {
+          drawHeight = canvas.height;
+          drawWidth = drawHeight * aspectRatio;
+        }
+        ctx.drawImage(video, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      }
+
+      ctx.restore();
+      requestAnimationFrame(drawCanvasLoop);
     }
 
-    allControls.forEach(control => {
-      control.addEventListener('input', applyTransforms);
-    });
+    function updateCanvas3DTransform() {
+      canvas.style.transform = `rotateX(${rotateX.value}deg) rotateY(${rotateY.value}deg)`;
+    }
+
+    rotateX.addEventListener('input', updateCanvas3DTransform);
+    rotateY.addEventListener('input', updateCanvas3DTransform);
 
     upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
+
       const url = URL.createObjectURL(file);
       video.src = url;
-      video.style.display = 'block';
 
       video.onloadeddata = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
         playToggle.disabled = false;
-        startRecord.disabled = false;
-        stopRecord.disabled = false;
-        recordrtcBtn.disabled = false;
-        ffmpegBtn.disabled = false;
+        recordButton.disabled = false;
         allControls.forEach(c => c.disabled = false);
-        video.play();
-        playToggle.textContent = '⏸ Pause';
+        drawCanvasLoop();
       };
     });
 
@@ -161,72 +175,50 @@
       }
     });
 
-    let mediaRecorder;
-    let recordedChunks = [];
+    recordButton.addEventListener('click', () => {
+      const duration = Math.min(Math.max(parseInt(durationInput.value, 10), 1), 30) * 1000;
+      const canvasStream = canvas.captureStream(30);
 
-    startRecord.addEventListener('click', () => {
-      const stream = canvas.captureStream();
-      recordedChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'edited-video.webm';
-        a.click();
-      };
-      mediaRecorder.start();
-    });
+      try {
+        const recorder = new MediaRecorder(canvasStream);
+        const chunks = [];
 
-    stopRecord.addEventListener('click', () => {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
+        recorder.ondataavailable = e => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+          recordedBlob = new Blob(chunks, { type: 'video/webm' });
+          if (recordedBlob.size === 0) {
+            alert("Recording failed: no data.");
+            return;
+          }
+          downloadButton.disabled = false;
+        };
+
+        recorder.start();
+        recordButton.textContent = '⏺ Recording...';
+        recordButton.disabled = true;
+
+        setTimeout(() => {
+          recorder.stop();
+          recordButton.textContent = '⏺ Record';
+          recordButton.disabled = false;
+        }, duration);
+      } catch (err) {
+        alert("MediaRecorder failed: " + err.message);
       }
     });
 
-    recordrtcBtn.addEventListener('click', () => {
-      const recorder = RecordRTC(canvas.captureStream(), {
-        type: 'video',
-        mimeType: 'video/webm'
-      });
-      recorder.startRecording();
-      setTimeout(() => {
-        recorder.stopRecording(() => {
-          const blob = recorder.getBlob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'recordrtc-video.webm';
-          a.click();
-        });
-      }, 5000); // Record 5 seconds
-    });
-
-    ffmpegBtn.addEventListener('click', async () => {
-      const { createFFmpeg, fetchFile } = FFmpeg;
-      const ffmpeg = createFFmpeg({ log: true });
-      await ffmpeg.load();
-      const stream = canvas.captureStream();
-      const recorder = new MediaRecorder(stream);
-      let chunks = [];
-      recorder.ondataavailable = e => chunks.push(e.data);
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks);
-        const arrayBuffer = await blob.arrayBuffer();
-        ffmpeg.FS('writeFile', 'input.webm', new Uint8Array(arrayBuffer));
-        await ffmpeg.run('-i', 'input.webm', 'output.mp4');
-        const data = ffmpeg.FS('readFile', 'output.mp4');
-        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'exported-video.mp4';
-        a.click();
-      };
-      recorder.start();
-      setTimeout(() => recorder.stop(), 5000);
+    downloadButton.addEventListener('click', () => {
+      if (!recordedBlob) return;
+      const url = URL.createObjectURL(recordedBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'edited-video.webm';
+      a.click();
     });
   </script>
+
 </body>
 </html>
