@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Futuristic Video Editor (MP4 Export + Trim)</title>
+  <title>Futuristic Video Editor (Full Export)</title>
   <style>
     body {
       margin: 0;
@@ -68,7 +68,7 @@
 </head>
 <body>
 
-  <h1>🎥 Futuristic Video Editor (MP4 Export + Trimming)</h1>
+  <h1>🎥 Futuristic Video Editor (Full Export + Trimming + 2D/3D)</h1>
 
   <input type="file" id="upload-video" accept="video/*">
 
@@ -82,15 +82,25 @@
     <label>Brightness <input type="range" id="brightness" min="0.5" max="2" step="0.1" value="1"></label>
     <label>Trim Start (sec) <input type="number" id="trimStart" min="0" value="0"></label>
     <label>Trim End (sec) <input type="number" id="trimEnd" min="1" value="5"></label>
-    <button id="start-record">⏺ Start Export</button>
-    <button id="stop-record" disabled>⏹ Stop & Save MP4</button>
+
+    <button id="start-recordrtc">🎥 Start RecordRTC</button>
+    <button id="stop-recordrtc" disabled>📥 Save WebM (RecordRTC)</button>
+
+    <button id="start-mediastream">📹 Start MediaRecorder</button>
+    <button id="stop-mediastream" disabled>💾 Save WebM (MediaRecorder)</button>
+
+    <button id="export-mp4">🎬 Export to MP4 (via ffmpeg.js)</button>
   </div>
 
   <div id="canvas-container">
     <video id="video-element" muted autoplay loop></video>
   </div>
 
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/recordrtc@5.6.2/RecordRTC.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+
   <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: true });
@@ -108,8 +118,14 @@
     const trimStart = document.getElementById('trimStart');
     const trimEnd = document.getElementById('trimEnd');
 
-    const startBtn = document.getElementById('start-record');
-    const stopBtn = document.getElementById('stop-record');
+    const startRTC = document.getElementById('start-recordrtc');
+    const stopRTC = document.getElementById('stop-recordrtc');
+    const startMedia = document.getElementById('start-mediastream');
+    const stopMedia = document.getElementById('stop-mediastream');
+    const exportMP4 = document.getElementById('export-mp4');
+
+    let recordRTC, mediaRecorder, mediaChunks = [];
+    let stream = document.getElementById('canvas-container').captureStream(30);
 
     function updateStyles() {
       video.style.transform = `
@@ -138,61 +154,69 @@
       }
     });
 
-    let recorder, chunks = [];
+    // RecordRTC
+    startRTC.onclick = () => {
+      recordRTC = new RecordRTC(stream, { type: 'video' });
+      recordRTC.startRecording();
+      stopRTC.disabled = false;
+    };
 
-    startBtn.addEventListener('click', () => {
-      chunks = [];
-      const stream = document.getElementById('canvas-container').captureStream(30);
-      recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    stopRTC.onclick = () => {
+      recordRTC.stopRecording(() => {
+        const blob = recordRTC.getBlob();
+        saveAs(blob, 'video-recordrtc.webm');
+      });
+      stopRTC.disabled = true;
+    };
 
-      recorder.ondataavailable = e => chunks.push(e.data);
+    // MediaRecorder
+    startMedia.onclick = () => {
+      mediaChunks = [];
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
-      recorder.onstop = async () => {
-        const webmBlob = new Blob(chunks, { type: 'video/webm' });
-        const start = parseFloat(trimStart.value || 0);
-        const end = parseFloat(trimEnd.value || 5);
-        const duration = end - start;
+      mediaRecorder.ondataavailable = e => mediaChunks.push(e.data);
 
-        const arrayBuffer = await webmBlob.arrayBuffer();
-
-        if (!ffmpeg.isLoaded()) {
-          await ffmpeg.load();
-        }
-
-        ffmpeg.FS('writeFile', 'input.webm', new Uint8Array(arrayBuffer));
-
-        await ffmpeg.run(
-          '-ss', String(start),
-          '-t', String(duration),
-          '-i', 'input.webm',
-          '-c:v', 'libx264',
-          '-preset', 'fast',
-          '-pix_fmt', 'yuv420p',
-          'output.mp4'
-        );
-
-        const mp4Data = ffmpeg.FS('readFile', 'output.mp4');
-        const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
-
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(mp4Blob);
-        a.download = 'edited-video.mp4';
-        a.click();
-
-        ffmpeg.FS('unlink', 'input.webm');
-        ffmpeg.FS('unlink', 'output.mp4');
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(mediaChunks, { type: 'video/webm' });
+        saveAs(blob, 'video-mediarecorder.webm');
       };
 
-      recorder.start();
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-    });
+      mediaRecorder.start();
+      startMedia.disabled = true;
+      stopMedia.disabled = false;
+    };
 
-    stopBtn.addEventListener('click', () => {
-      recorder.stop();
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-    });
+    stopMedia.onclick = () => {
+      mediaRecorder.stop();
+      startMedia.disabled = false;
+      stopMedia.disabled = true;
+    };
+
+    // Export to MP4 using ffmpeg.js
+    exportMP4.onclick = async () => {
+      if (!recordRTC) {
+        alert('Please record first using RecordRTC before exporting.');
+        return;
+      }
+
+      const webmBlob = recordRTC.getBlob();
+      const start = parseFloat(trimStart.value || 0);
+      const end = parseFloat(trimEnd.value || 5);
+      const duration = end - start;
+
+      const buffer = await webmBlob.arrayBuffer();
+      if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+      ffmpeg.FS('writeFile', 'input.webm', new Uint8Array(buffer));
+      await ffmpeg.run('-ss', String(start), '-t', String(duration), '-i', 'input.webm', '-c:v', 'libx264', '-preset', 'fast', '-pix_fmt', 'yuv420p', 'output.mp4');
+
+      const data = ffmpeg.FS('readFile', 'output.mp4');
+      const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' });
+      saveAs(mp4Blob, 'converted-video.mp4');
+
+      ffmpeg.FS('unlink', 'input.webm');
+      ffmpeg.FS('unlink', 'output.mp4');
+    };
   </script>
 </body>
 </html>
