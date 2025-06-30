@@ -2,215 +2,231 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🎬 Futuristic Video Editor + Export</title>
+  <title>🎬 Advanced Video Editor & Export</title>
+  <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
   <style>
     body {
       background: #111;
-      color: white;
+      color: #fff;
       font-family: sans-serif;
       text-align: center;
+      margin: 0;
+      padding: 20px;
     }
-
-    #canvas-container {
+    #editor-container {
       width: 800px;
       height: 450px;
       margin: 20px auto;
-      border: 2px dashed #666;
       background: #000;
-      overflow: hidden;
+      border: 2px dashed #555;
       position: relative;
+      overflow: hidden;
       perspective: 1000px;
     }
-
-    video#video {
+    video, canvas {
       width: 100%;
       height: 100%;
       object-fit: cover;
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 10;
-      pointer-events: none;
       transform-origin: center;
+      z-index: 1;
     }
-
     #controls, #export-controls {
+      margin-top: 20px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      margin: 15px auto;
-      max-width: 900px;
     }
-
     label {
       font-size: 14px;
     }
-
     input[type="range"] {
-      width: 80px;
+      width: 100px;
     }
-
     button {
       background: #0a84ff;
+      color: #fff;
       border: none;
-      color: white;
       padding: 8px 12px;
-      margin: 5px;
+      font-size: 14px;
       border-radius: 4px;
       cursor: pointer;
     }
-
-    button:hover {
-      background: #005ecb;
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    h2 {
+      margin-top: 40px;
     }
   </style>
 </head>
 <body>
 
-  <h1>🎥 Futuristic Video Editor + Export</h1>
+  <h1>🎬 Simple Video Editor & Export</h1>
+  <input type="file" id="video-upload" accept="video/*" />
+  <button id="play-toggle" disabled>▶️ Play</button>
 
-  <input type="file" id="upload" accept="video/*" />
-
-  <div id="canvas-container">
-    <video id="video" muted autoplay playsinline loop></video>
+  <div id="editor-container">
+    <video id="video" muted playsinline loop></video>
+    <canvas id="captureCanvas"></canvas>
   </div>
 
   <div id="controls">
-    <label>RotateX <input type="range" id="rx" min="-180" max="180" value="0" /></label>
-    <label>RotateY <input type="range" id="ry" min="-180" max="180" value="0" /></label>
-    <label>RotateZ <input type="range" id="rz" min="-180" max="180" value="0" /></label>
-    <label>Scale <input type="range" id="scale" min="0.1" max="2" step="0.1" value="1" /></label>
-    <label>Blur <input type="range" id="blur" min="0" max="10" value="0" /></label>
-    <label>Brightness <input type="range" id="bright" min="0.5" max="2" step="0.1" value="1" /></label>
+    <label>RotateX <input type="range" id="rotateX" min="-180" max="180" value="0" disabled></label>
+    <label>RotateY <input type="range" id="rotateY" min="-180" max="180" value="0" disabled></label>
+    <label>RotateZ <input type="range" id="rotateZ" min="-180" max="180" value="0" disabled></label>
+    <label>Scale <input type="range" id="scale" min="0.1" max="2" step="0.1" value="1" disabled></label>
+    <label>Blur <input type="range" id="blur" min="0" max="10" value="0" disabled></label>
+    <label>Brightness <input type="range" id="brightness" min="0.5" max="2" step="0.1" value="1" disabled></label>
   </div>
 
+  <h2>🎥 Export Options</h2>
   <div id="export-controls">
-    <button id="start-rtc">🎥 Start RecordRTC</button>
-    <button id="stop-rtc" disabled>💾 Save WebM (RTC)</button>
-    <button id="start-media">📹 Start MediaRecorder</button>
-    <button id="stop-media" disabled>💾 Save WebM (Media)</button>
-    <button id="export-mp4">🎬 Convert to MP4</button>
+    <button id="start-record" disabled>🔴 Record & Export (MediaRecorder)</button>
+    <button id="stop-record" disabled>⏹ Stop</button>
+    <button id="recordrtc" disabled>🟠 Export with RecordRTC</button>
+    <button id="ffmpegExport" disabled>🟢 Export with FFmpeg</button>
   </div>
-
-  <!-- External libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/recordrtc@5.6.2/RecordRTC.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
 
   <script>
-    const ffmpeg = FFmpeg.createFFmpeg({ log: true });
-
     const video = document.getElementById('video');
-    const upload = document.getElementById('upload');
-    const container = document.getElementById('canvas-container');
+    const canvas = document.getElementById('captureCanvas');
+    const ctx = canvas.getContext('2d');
 
-    const rx = document.getElementById('rx');
-    const ry = document.getElementById('ry');
-    const rz = document.getElementById('rz');
+    const upload = document.getElementById('video-upload');
+    const playToggle = document.getElementById('play-toggle');
+    const rotateX = document.getElementById('rotateX');
+    const rotateY = document.getElementById('rotateY');
+    const rotateZ = document.getElementById('rotateZ');
     const scale = document.getElementById('scale');
     const blur = document.getElementById('blur');
-    const bright = document.getElementById('bright');
+    const brightness = document.getElementById('brightness');
+    const startRecord = document.getElementById('start-record');
+    const stopRecord = document.getElementById('stop-record');
+    const recordrtcBtn = document.getElementById('recordrtc');
+    const ffmpegBtn = document.getElementById('ffmpegExport');
 
-    const startRTC = document.getElementById('start-rtc');
-    const stopRTC = document.getElementById('stop-rtc');
-    const startMedia = document.getElementById('start-media');
-    const stopMedia = document.getElementById('stop-media');
-    const exportMP4 = document.getElementById('export-mp4');
+    const allControls = [rotateX, rotateY, rotateZ, scale, blur, brightness];
 
-    let stream = null;
-    let rtc, media, chunks = [];
-
-    function applyTransform() {
+    function applyTransforms() {
       video.style.transform = `
-        rotateX(${rx.value}deg)
-        rotateY(${ry.value}deg)
-        rotateZ(${rz.value}deg)
+        rotateX(${rotateX.value}deg)
+        rotateY(${rotateY.value}deg)
+        rotateZ(${rotateZ.value}deg)
         scale(${scale.value})
       `;
-      video.style.filter = `blur(${blur.value}px) brightness(${bright.value})`;
+      video.style.filter = `
+        blur(${blur.value}px)
+        brightness(${brightness.value})
+      `;
     }
 
-    [rx, ry, rz, scale, blur, bright].forEach(el =>
-      el.addEventListener('input', applyTransform)
-    );
+    allControls.forEach(control => {
+      control.addEventListener('input', applyTransforms);
+    });
 
-    upload.addEventListener('change', e => {
+    upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const url = URL.createObjectURL(file);
       video.src = url;
-      video.load();
+      video.style.display = 'block';
 
       video.onloadeddata = () => {
-        video.play().catch(console.warn);
-      };
-
-      video.onplaying = () => {
-        if (!stream) {
-          stream = container.captureStream(30);
-          console.log('🎥 Stream ready');
-        }
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        playToggle.disabled = false;
+        startRecord.disabled = false;
+        stopRecord.disabled = false;
+        recordrtcBtn.disabled = false;
+        ffmpegBtn.disabled = false;
+        allControls.forEach(c => c.disabled = false);
+        video.play();
+        playToggle.textContent = '⏸ Pause';
       };
     });
 
-    // RecordRTC
-    startRTC.onclick = () => {
-      if (!stream) return alert('Upload a video first');
-      rtc = new RecordRTC(stream, { type: 'video' });
-      rtc.startRecording();
-      stopRTC.disabled = false;
-    };
-
-    stopRTC.onclick = () => {
-      rtc.stopRecording(() => {
-        const blob = rtc.getBlob();
-        saveAs(blob, 'recordrtc-video.webm');
-      });
-      stopRTC.disabled = true;
-    };
-
-    // MediaRecorder
-    startMedia.onclick = () => {
-      if (!stream) return alert('Upload a video first');
-      chunks = [];
-      media = new MediaRecorder(stream, { mimeType: 'video/webm' });
-      media.ondataavailable = e => chunks.push(e.data);
-      media.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        saveAs(blob, 'mediarecorder-video.webm');
-      };
-      media.start();
-      startMedia.disabled = true;
-      stopMedia.disabled = false;
-    };
-
-    stopMedia.onclick = () => {
-      media.stop();
-      startMedia.disabled = false;
-      stopMedia.disabled = true;
-    };
-
-    // ffmpeg.js MP4 export
-    exportMP4.onclick = async () => {
-      if (!rtc) return alert('Use RecordRTC to record first.');
-      const blob = rtc.getBlob();
-      const buffer = await blob.arrayBuffer();
-
-      if (!ffmpeg.isLoaded()) {
-        await ffmpeg.load();
+    playToggle.addEventListener('click', () => {
+      if (video.paused) {
+        video.play();
+        playToggle.textContent = '⏸ Pause';
+      } else {
+        video.pause();
+        playToggle.textContent = '▶️ Play';
       }
+    });
 
-      ffmpeg.FS('writeFile', 'input.webm', new Uint8Array(buffer));
-      await ffmpeg.run('-i', 'input.webm', '-c:v', 'libx264', '-preset', 'fast', '-pix_fmt', 'yuv420p', 'output.mp4');
-      const mp4Data = ffmpeg.FS('readFile', 'output.mp4');
-      const mp4Blob = new Blob([mp4Data.buffer], { type: 'video/mp4' });
-      saveAs(mp4Blob, 'converted-video.mp4');
+    let mediaRecorder;
+    let recordedChunks = [];
 
-      ffmpeg.FS('unlink', 'input.webm');
-      ffmpeg.FS('unlink', 'output.mp4');
-    };
+    startRecord.addEventListener('click', () => {
+      const stream = canvas.captureStream();
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'edited-video.webm';
+        a.click();
+      };
+      mediaRecorder.start();
+    });
+
+    stopRecord.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+    });
+
+    recordrtcBtn.addEventListener('click', () => {
+      const recorder = RecordRTC(canvas.captureStream(), {
+        type: 'video',
+        mimeType: 'video/webm'
+      });
+      recorder.startRecording();
+      setTimeout(() => {
+        recorder.stopRecording(() => {
+          const blob = recorder.getBlob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'recordrtc-video.webm';
+          a.click();
+        });
+      }, 5000); // Record 5 seconds
+    });
+
+    ffmpegBtn.addEventListener('click', async () => {
+      const { createFFmpeg, fetchFile } = FFmpeg;
+      const ffmpeg = createFFmpeg({ log: true });
+      await ffmpeg.load();
+      const stream = canvas.captureStream();
+      const recorder = new MediaRecorder(stream);
+      let chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = async () => {
+        const blob = new Blob(chunks);
+        const arrayBuffer = await blob.arrayBuffer();
+        ffmpeg.FS('writeFile', 'input.webm', new Uint8Array(arrayBuffer));
+        await ffmpeg.run('-i', 'input.webm', 'output.mp4');
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'exported-video.mp4';
+        a.click();
+      };
+      recorder.start();
+      setTimeout(() => recorder.stop(), 5000);
+    });
   </script>
 </body>
 </html>
