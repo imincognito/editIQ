@@ -116,32 +116,35 @@
     let recordedBlob = null;
 
     function drawCanvasLoop() {
-      ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(parseFloat(rotateZ.value) * Math.PI / 180);
-      ctx.scale(parseFloat(scale.value), parseFloat(scale.value));
+  const angleZ = parseFloat(rotateZ.value) * Math.PI / 180;
+  const s = parseFloat(scale.value);
+  const blurVal = blur.value;
+  const brightnessVal = brightness.value;
 
-      ctx.filter = `blur(${blur.value}px) brightness(${brightness.value})`;
+  ctx.filter = `blur(${blurVal}px) brightness(${brightnessVal})`;
 
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
 
-      if (vw && vh) {
-        const aspectRatio = vw / vh;
-        let drawWidth = canvas.width;
-        let drawHeight = drawWidth / aspectRatio;
-        if (drawHeight > canvas.height) {
-          drawHeight = canvas.height;
-          drawWidth = drawHeight * aspectRatio;
-        }
-        ctx.drawImage(video, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-      }
+  if (vw && vh) {
+    const aspectRatio = vw / vh;
 
-      ctx.restore();
-      requestAnimationFrame(drawCanvasLoop);
-    }
+    // Calculate bounding box size after rotation
+    const drawW = canvas.width * 1.5;
+    const drawH = drawW / aspectRatio;
+
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(angleZ);
+    ctx.scale(s, s);
+    ctx.drawImage(video, -drawW / 2, -drawH / 2, drawW, drawH);
+  }
+
+  ctx.restore();
+  requestAnimationFrame(drawCanvasLoop);
+}
 
     function updateCanvas3DTransform() {
       canvas.style.transform = `rotateX(${rotateX.value}deg) rotateY(${rotateY.value}deg)`;
