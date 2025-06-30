@@ -1,1 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>editIQ 2.0 — Enhanced 3D Web Editor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap');
+
+        /* === THEMES === */
+        :root {
+            --bg-dark: #121214;
+            --primary-glow: #00f0ff;
+            --accent-color: #0ff;
+            --text-light: #eee;
+            --panel-bg: #1b1b23;
+            --shadow-glow: rgba(0, 255, 255, 0.25);
+            --font-family: 'Orbitron', sans-serif;
+            --border-color: #333;
+            --hover-bg: rgba(0, 255, 255, 0.1);
+            --success-color: #00ff88;
+            --warning-color: #ffaa00;
+            --error-color: #ff4444;
+        }
+
+        body.theme-purple {
+            --primary-glow: #ae00ff;
+            --accent-color: #c08cff;
+            --shadow-glow: rgba(174, 0, 255, 0.3);
+            --panel-bg: #2a1b3d;
+            --bg-dark: #1a122a;
+        }
+
+        body.theme-red {
+            --primary-glow: #ff0055;
+            --accent-color: #ff80a5;
+            --shadow-glow: rgba(255, 0, 85, 0.3);
+            --panel-bg: #3a1b22;
+            --bg-dark: #1a1214;
+        }
+
+        body.theme-green {
+            --primary-glow: #00ff88;
+            --accent-color: #66ffaa;
+            --shadow-glow: rgba(0, 255, 136, 0.3);
+            --panel-bg: #1b3a22;
+            --bg-dark: #121a14;
+        }
+
+        /* === BASE STYLES === */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: var(--font-family);
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: grid;
+            grid-template-columns: 280px 1fr 380px;
+            grid-template-rows: 60px 1fr 140px;
+            grid-template-areas: 
+                "topbar topbar topbar"
+                "sidebar canvas properties"
+                "layers layers layers";
+            overflow: hidden;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                grid-template-columns: 220px 1fr 320px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+                grid-template-rows: 60px 200px 1fr 120px;
+                grid-template-areas: 
+                    "topbar"
+                    "sidebar"
+                    "canvas"
+                    "layers";
+            }
+        }
+
+        button, input, select {
+            font-family: var(--font-family);
+        }
+
+        button {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* === TOPBAR === */
+        header {
+            grid-area: topbar;
+            background: var(--panel-bg);
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 1rem;
+            color: var(--primary-glow);
+            text-shadow: 0 0 8px var(--primary-glow);
+            font-weight: 600;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        header .title {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-glow);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg-dark);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        header button {
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            color: var(--primary-glow);
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--primary-glow);
+            transform: translateY(-1px);
+        }
+
+        header button:active {
+            transform: translateY(0);
+        }
+
+        header select {
+            background: var(--panel-bg);
+            border: 2px solid var(--primary-glow);
+            color: var(--accent-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        /* === SIDEBAR TOOLS === */
+        aside.sidebar {
+            grid-area: sidebar;
+            background: var(--panel-bg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border-right: 2px solid var(--border-color);
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar h3 {
+            color: var(--primary-glow);
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .tool-button {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            color: var(--accent-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            transition: all 0.3s ease;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--hover-bg), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .tool-button:hover::before {
+            left: 100%;
+        }
+
+        .tool-button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--primary-glow);
+            transform: translateY(-2px);
+        }
+
+        .tool-button svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .tool-button:hover svg {
+            transform: scale(1.1);
+        }
+
+        /* === CANVAS === */
+        main.canvas {
+            grid-area: canvas;
+            position: relative;
+            background: linear-gradient(135deg, #0a0a10 0%, #17171f 100%);
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            margin: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+            transform-origin: top left;
+            perspective: 2000px;
+        }
+
+        .canvas-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 600px;
+            background: radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+                        #14141a;
+            border-radius: 10px;
+            cursor: default;
+            overflow: hidden;
+            transform-origin: 0 0;
+            transform-style: preserve-3d;
+        }
+
+        #glcanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        /* === PROPERTIES PANEL === */
+        aside.properties {
+            grid-area: properties;
+            background: var(--panel-bg);
+            padding: 1.5rem;
+            border-left: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 0.9rem;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+            max-height: calc(100vh - 200px);
+        }
+
+        aside.properties h2 {
+            color: var(--primary-glow);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.8rem;
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+        }
+
+        .property-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .property-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .property-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        label {
+            color: var(--accent-color);
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.3rem;
+        }
+
+        input[type="text"], input[type="number"], select, input[type="range"], input[type="color"] {
+            background: #101018;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-light);
+            padding: 8px 12px;
+            font-family: var(--font-family);
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus, input[type="range"]:focus, input[type="color"]:focus {
+            outline: none;
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border-color);
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-glow);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--primary-glow);
+            border: none;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            padding: 2px;
+            cursor: pointer;
+        }
+
+        .preset-button {
+            background: transparent;
+            border: 1px solid var(--primary-glow);
+            color: var(--accent-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .preset-button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        /* === LAYERS PANEL === */
+        aside.layers {
+            grid-area: layers;
+            background: var(--panel-bg);
+            border-top: 2px solid var(--border-color);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            color: var(--accent-color);
+            user-select: none;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .layers-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .layers-header h3 {
+            margin: 0;
+            color: var(--primary-glow);
+            font-size: 1.1rem;
+        }
+
+        .layers-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+        }
+
+        .layer-item {
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            min-width: 100px;
+            justify-content: center;
+        }
+
+        .layer-item:hover {
+            background: var(--hover-bg);
+            transform: translateY(-2px);
+        }
+
+        .layer-item.selected {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .layer-item .layer-icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* === ZOOM CONTROLS === */
+        .zoom-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .zoom-controls button {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+            border: 2px solid var(--primary-glow);
+            color: var(--primary-glow);
+            transition: all 0.3s ease;
+        }
+
+        .zoom-controls button:hover {
+            background: var(--primary-glow);
+            color: var(--bg-dark);
+            transform: scale(1.1);
+        }
+
+        .zoom-level {
+            color: var(--accent-color);
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* === NOTIFICATIONS === */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--panel-bg);
+            border: 2px solid var(--primary-glow);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            color: var(--text-light);
+            box-shadow: 0 0 20px var(--primary-glow);
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-color: var(--success-color);
+            box-shadow: 0 0 20px var(--success-color);
+        }
+
+        .notification.error {
+            border-color: var(--error-color);
+            box-shadow: 0 0 20px var(--error-color);
+        }
+
+        /* === LOADING SPINNER === */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            color: var(--primary-glow);
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-glow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .properties {
+                display: none;
+            }
+            .sidebar {
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 1rem;
+            }
+            .tool-button {
+                min-width: 120px;
+            }
+        }
+
+        /* === ACCESSIBILITY === */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 15px var(--primary-glow); }
+            50% { box-shadow: 0 0 25px var(--primary-glow); }
+        }
+
+        .glow-animation {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes float3d {
+            0%, 100% { transform: translateZ(0px) rotateY(0deg); }
+            50% { transform: translateZ(20px) rotateY(180deg); }
+        }
+
+        .float-3d {
+            animation: float3d 4s ease-in-out infinite;
+        }
+
+        @keyframes spin3d {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+        }
+
+        .spin-3d {
+            animation: spin3d 6s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <header>
+        <div class="title">
+            <div class="logo">E</div>
+            editIQ 2.0 — 3D Enhanced
+        </div>
+        <button id="btn-undo" title="Undo (Ctrl+Z)">↶ Undo</button>
+        <button id="btn-redo" title="Redo (Ctrl+Y)">↷ Redo</button>
+        <button id="btn-new" title="New Project">🗎 New</button>
+        <button id="btn-save" title="Save Project">💾 Save</button>
+        <button id="btn-export-png" title="Export as PNG">🖼️ PNG</button>
+        <button id="btn-export-mp4" title="Export as MP4">🎬 MP4</button>
+        <select id="theme-switcher" title="Switch Theme">
+            <option value="default">Theme: Cyan</option>
+            <option value="purple">Theme: Purple</option>
+            <option value="red">Theme: Red</option>
+            <option value="green">Theme: Green</option>
+        </select>
+    </header>
+
+    <!-- SIDEBAR TOOLS -->
+    <aside class="sidebar" role="toolbar" aria-label="Editor Tools">
+        <h3>2D Elements</h3>
+        <div class="tool-button" id="add-text" tabindex="0" title="Add Text Element">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 17v-2h8v2H4zm0-6V9h12v2H4zm0-4V5h16v2H4z"/>
+            </svg>
+            Text
+        </div>
+        <div class="tool-button" id="add-shape" tabindex="0" title="Add Circle Shape">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="6"/>
+            </svg>
+            Circle
+        </div>
+        <div class="tool-button" id="add-rectangle" tabindex="0" title="Add Rectangle">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+            Rectangle
+        </div>
+
+        <h3>3D Elements</h3>
+        <div class="tool-button" id="add-cube" tabindex="0" title="Add 3D Cube">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            3D Cube
+        </div>
+        <div class="tool-button" id="add-image" tabindex="0" title="Add Image Element">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8" cy="8" r="1.5"/>
+                <path d="M21 15l-5-5-5 5"/>
+            </svg>
+            Image
+            <input type="file" id="file-image" accept="image/*" style="display:none" />
+        </div>
+        <div class="tool-button" id="add-video" tabindex="0" title="Add Video Element">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 10.5V7c0-1.104-.896-2-2-2H5c-1.104 0-2 .896-2 2v10c0 1.104.896 2 2 2h10c1.104 0 2-.896 2-2v-3.5l4 4v-11l-4 4z"/>
+            </svg>
+            Video
+            <input type="file" id="file-video" accept="video/*" style="display:none" />
+        </div>
+    </aside>
+
+    <!-- MAIN CANVAS -->
+    <main class="canvas" tabindex="0" aria-label="Editing Canvas">
+        <div class="canvas-inner">
+            <canvas id="glcanvas"></canvas>
+        </div>
+    </main>
+
+    <!-- PROPERTIES PANEL -->
+    <aside class="properties" aria-label="Properties Panel">
+        <h2>Properties</h2>
+        <div class="property-group">
+            <label for="prop-name">Element Name</label>
+            <input type="text" id="prop-name" placeholder="Element name" />
+        </div>
+
+        <h2>Position & Size</h2>
+        <div class="property-row-3">
+            <div class="property-group">
+                <label for="prop-x">X Position</label>
+                <input type="range" id="prop-x" min="-5" max="5" step="0.01" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-y">Y Position</label>
+                <input type="range" id="prop-y" min="-5" max="5" step="0.01" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-z">Z Position</label>
+                <input type="range" id="prop-z" min="-5" max="5" step="0.01" value="0" />
+            </div>
+        </div>
+
+        <h2>3D Transform</h2>
+        <div class="property-row-3">
+            <div class="property-group">
+                <label for="prop-rotate-x">Rotate X</label>
+                <input type="range" id="prop-rotate-x" min="-180" max="180" step="1" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-rotate-y">Rotate Y</label>
+                <input type="range" id="prop-rotate-y" min="-180" max="180" step="1" value="0" />
+            </div>
+            <div class="property-group">
+                <label for="prop-rotate-z">Rotate Z</label>
+                <input type="range" id="prop-rotate-z" min="-180" max="180" step="1" value="0" />
+            </div>
+        </div>
+
+        <div class="property-group">
+            <label for="prop-scale">Scale</label>
+            <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1" />
+        </div>
+
+        <h2>3D Presets</h2>
+        <div class="preset-grid">
+            <button class="preset-button" id="preset-flip">Flip Card</button>
+            <button class="preset-button" id="preset-cube">Cube Spin</button>
+            <button class="preset-button" id="preset-float">Float 3D</button>
+            <button class="preset-button" id="preset-reset">Reset 3D</button>
+        </div>
+
+        <h2>Text Properties</h2>
+        <div class="property-group" id="text-content-group" style="display: none;">
+            <label for="prop-text">Text Content</label>
+            <input type="text" id="prop-text" />
+        </div>
+        <div class="property-group" id="text-size-group" style="display: none;">
+            <label for="prop-text-size">Font Size</label>
+            <input type="number" id="prop-text-size" min="10" max="100" value="32" />
+        </div>
+        <div class="property-group" id="color-group" style="display: none;">
+            <label for="prop-color">Text Color</label>
+            <input type="color" id="prop-color" value="#ffffff" />
+        </div>
+        <div class="property-group" id="bg-color-group" style="display: none;">
+            <label for="prop-bg-color">Background Color</label>
+            <input type="color" id="prop-bg-color" value="#000000" />
+        </div>
+        <div class="property-group" id="border-group" style="display: none;">
+            <label for="prop-border-color">Border Color</label>
+            <input type="color" id="prop-border-color" value="#ff0000" />
+        </div>
+        <div class="property-group" id="border-width-group" style="display: none;">
+            <label for="prop-border-width">Border Width</label>
+            <input type="number" id="prop-border-width" min="0" max="10" value="2" />
+        </div>
+    </aside>
+
+    <!-- LAYERS PANEL -->
+    <aside class="layers" aria-label="Layers Panel">
+        <div class="layers-header">
+            <h3>Layers</h3>
+            <div class="zoom-controls">
+                <button id="zoom-out" title="Zoom Out">−</button>
+                <div class="zoom-level" id="zoom-level">100%</div>
+                <button id="zoom-in" title="Zoom In">+</button>
+                <button id="zoom-reset" title="Reset Zoom">⌂</button>
+            </div>
+        </div>
+        <div class="layers-content" id="layers-content">
+            <!-- Layers will be dynamically added here -->
+        </div>
+    </aside>
+
+    <!-- LOADING INDICATOR -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Processing...</div>
+    </div>
+
+    <!-- NOTIFICATION CONTAINER -->
+    <div id="notification-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script>
+        // === THREE.JS GLOBALS ===
+        let scene, camera, renderer, selected = null;
+        const objects = [];
+        let elementCounter = 0;
+        let history = [];
+        let historyIndex = -1;
+
+        // === UI GLOBALS ===
+        const canvas = document.getElementById('glcanvas');
+        const addTextBtn = document.getElementById('add-text');
+        const addShapeBtn = document.getElementById('add-shape');
+        const addImageBtn = document.getElementById('add-image');
+        const addVideoBtn = document.getElementById('add-video');
+        const addRectangleBtn = document.getElementById('add-rectangle');
+        const addCubeBtn = document.getElementById('add-cube');
+        const fileImageInput = document.getElementById('file-image');
+        const fileVideoInput = document.getElementById('file-video');
+
+        // Property controls
+        const propName = document.getElementById('prop-name');
+        const propX = document.getElementById('prop-x');
+        const propY = document.getElementById('prop-y');
+        const propZ = document.getElementById('prop-z');
+        const propText = document.getElementById('prop-text');
+        const propTextSize = document.getElementById('prop-text-size');
+        const propRotateX = document.getElementById('prop-rotate-x');
+        const propRotateY = document.getElementById('prop-rotate-y');
+        const propRotateZ = document.getElementById('prop-rotate-z');
+        const propScale = document.getElementById('prop-scale');
+        const propColor = document.getElementById('prop-color');
+        const propBgColor = document.getElementById('prop-bg-color');
+        const propBorderColor = document.getElementById('prop-border-color');
+        const propBorderWidth = document.getElementById('prop-border-width');
+
+        // UI elements
+        const layersContent = document.getElementById('layers-content');
+        const themeSwitcher = document.getElementById('theme-switcher');
+        const zoomLevel = document.getElementById('zoom-level');
+        const loading = document.getElementById('loading');
+
+        // === INITIALIZATION ===
+        init();
+        animate();
+
+        function init() {
+            // Setup Three.js renderer
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                preserveDrawingBuffer: true,
+                antialias: true 
+            });
+            renderer.setClearColor(0x0d0d0d);
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+            // Setup scene and camera
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            camera.position.z = 3;
+
+            // Event listeners
+            canvas.addEventListener('mousedown', onCanvasClick);
+            window.addEventListener('resize', onWindowResize);
+
+            // Initialize first state
+            saveState();
+            showNotification('editIQ 2.0 — 3D Enhanced loaded successfully!', 'success');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        }
+
+        function onCanvasClick(e) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            const mouse = new THREE.Vector2(x, y);
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+
+            if (intersects.length > 0) {
+                selectElement(intersects[0].object);
+            } else {
+                selectElement(null);
+            }
+        }
+
+        // === UTILITY FUNCTIONS ===
+        function generateId() {
+            return 'element_' + (++elementCounter);
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.getElementById('notification-container').appendChild(notification);
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        // === STATE MANAGEMENT ===
+        function saveState() {
+            const state = {
+                objects: objects.map(obj => ({
+                    id: obj.userData.id,
+                    type: obj.userData.type,
+                    position: obj.position.toArray(),
+                    rotation: obj.rotation.toArray(),
+                    scale: obj.scale.toArray(),
+                    text: obj.userData.text || '',
+                    options: obj.userData.options || {}
+                }))
+            };
+            history = history.slice(0, historyIndex + 1);
+            history.push(JSON.stringify(state));
+            historyIndex++;
+            if (history.length > 50) {
+                history.shift();
+                historyIndex--;
+            }
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreState(JSON.parse(history[historyIndex]));
+                showNotification('Undone', 'success');
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                restoreState(JSON.parse(history[historyIndex]));
+                showNotification('Redone', 'success');
+            }
+        }
+
+        function restoreState(state) {
+            // Clear scene
+            objects.forEach(obj => scene.remove(obj));
+            objects.length = 0;
+
+            // Restore objects
+            state.objects.forEach(objData => {
+                let obj;
+                switch(objData.type) {
+                    case 'text':
+                        obj = createTextMesh(objData.text, objData.options);
+                        break;
+                    case 'shape':
+                        obj = createShapeMesh();
+                        break;
+                    case 'rectangle':
+                        obj = createRectangleMesh();
+                        break;
+                    case 'cube':
+                        obj = createCubeMesh();
+                        break;
+                }
+                if (obj) {
+                    obj.userData.id = objData.id;
+                    obj.userData.type = objData.type;
+                    obj.position.fromArray(objData.position);
+                    obj.rotation.fromArray(objData.rotation);
+                    obj.scale.fromArray(objData.scale);
+                    scene.add(obj);
+                    objects.push(obj);
+                }
+            });
+
+            renderLayers();
+            if (selected && !objects.includes(selected)) {
+                selected = null;
+                clearProperties();
+            }
+        }
+
+        // === IMAGE HANDLING ===
+        function handleImageUpload(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const texture = new THREE.Texture(img);
+                    texture.needsUpdate = true;
+                    const material = new THREE.MeshBasicMaterial({ map: texture });
+                    const geometry = new THREE.PlaneGeometry(1.6, 0.9);
+                    const mesh = new THREE.Mesh(geometry, material);
+                    
+                    mesh.userData.id = generateId();
+                    mesh.userData.type = 'image';
+                    mesh.position.set(0, 0, 0);
+                    
+                    scene.add(mesh);
+                    objects.push(mesh);
+                    selectElement(mesh);
+                    renderLayers();
+                    saveState();
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // === TEXT CREATION ===
+        function createTextTexture(text, options) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = options.bg;
+            ctx.strokeStyle = options.border;
+            ctx.lineWidth = options.borderWidth;
+
+            const w = canvas.width, h = canvas.height;
+            const r = options.radius || 10;
+
+            ctx.beginPath();
+            ctx.moveTo(r, 0); ctx.lineTo(w - r, 0);
+            ctx.quadraticCurveTo(w, 0, w, r);
+            ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h);
+            ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r);
+            ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath(); 
+            ctx.fill(); 
+            if (options.borderWidth > 0) ctx.stroke();
+
+            ctx.fillStyle = options.color;
+            ctx.font = `${options.size}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function createTextMesh(text, options) {
+            const defaultOptions = {
+                size: 32,
+                color: "#ffffff",
+                bg: "#000000",
+                border: "#ff0000",
+                borderWidth: 2,
+                radius: 10
+            };
+            const opts = { ...defaultOptions, ...options };
+            
+            const texture = createTextTexture(text, opts);
+            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            const geometry = new THREE.PlaneGeometry(1.6, 0.8);
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.text = text;
+            mesh.userData.options = opts;
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'text';
+            
+            return mesh;
+        }
+
+        function createShapeMesh() {
+            const geometry = new THREE.CircleGeometry(0.5, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'shape';
+            
+            return mesh;
+        }
+
+        function createRectangleMesh() {
+            const geometry = new THREE.PlaneGeometry(1.5, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'rectangle';
+            
+            return mesh;
+        }
+
+        function createCubeMesh() {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'cube';
+            
+            return mesh;
+        }
+
+        // === ELEMENT SELECTION ===
+        function selectElement(obj) {
+            selected = obj;
+            updateProperties();
+            updateLayersSelection();
+        }
+
+        function updateProperties() {
+            if (!selected) {
+                clearProperties();
+                return;
+            }
+
+            propName.value = selected.userData.id || '';
+            propX.value = selected.position.x;
+            propY.value = selected.position.y;
+            propZ.value = selected.position.z;
+            propRotateX.value = THREE.MathUtils.radToDeg(selected.rotation.x);
+            propRotateY.value = THREE.MathUtils.radToDeg(selected.rotation.y);
+            propRotateZ.value = THREE.MathUtils.radToDeg(selected.rotation.z);
+            propScale.value = selected.scale.x;
+
+            // Show/hide relevant controls
+            const textGroup = document.getElementById('text-content-group');
+            const textSizeGroup = document.getElementById('text-size-group');
+            const colorGroup = document.getElementById('color-group');
+            const bgColorGroup = document.getElementById('bg-color-group');
+            const borderGroup = document.getElementById('border-group');
+            const borderWidthGroup = document.getElementById('border-width-group');
+
+            if (selected.userData.type === 'text') {
+                propText.value = selected.userData.text || '';
+                propTextSize.value = selected.userData.options?.size || 32;
+                propColor.value = selected.userData.options?.color || '#ffffff';
+                propBgColor.value = selected.userData.options?.bg || '#000000';
+                propBorderColor.value = selected.userData.options?.border || '#ff0000';
+                propBorderWidth.value = selected.userData.options?.borderWidth || 2;
+                
+                textGroup.style.display = 'block';
+                textSizeGroup.style.display = 'block';
+                colorGroup.style.display = 'block';
+                bgColorGroup.style.display = 'block';
+                borderGroup.style.display = 'block';
+                borderWidthGroup.style.display = 'block';
+            } else {
+                textGroup.style.display = 'none';
+                textSizeGroup.style.display = 'none';
+                colorGroup.style.display = 'none';
+                bgColorGroup.style.display = 'none';
+                borderGroup.style.display = 'none';
+                borderWidthGroup.style.display = 'none';
+            }
+        }
+
+        function clearProperties() {
+            propName.value = '';
+            propX.value = '0';
+            propY.value = '0';
+            propZ.value = '0';
+            propRotateX.value = '0';
+            propRotateY.value = '0';
+            propRotateZ.value = '0';
+            propScale.value = '1';
+            propText.value = '';
+            
+            document.getElementById('text-content-group').style.display = 'none';
+            document.getElementById('text-size-group').style.display = 'none';
+            document.getElementById('color-group').style.display = 'none';
+            document.getElementById('bg-color-group').style.display = 'none';
+            document.getElementById('border-group').style.display = 'none';
+            document.getElementById('border-width-group').style.display = 'none';
+        }
+
+        function applyPropertiesToElement() {
+            if (!selected) return;
+
+            selected.position.x = parseFloat(propX.value);
+            selected.position.y = parseFloat(propY.value);
+            selected.position.z = parseFloat(propZ.value);
+            selected.rotation.x = THREE.MathUtils.degToRad(parseFloat(propRotateX.value));
+            selected.rotation.y = THREE.MathUtils.degToRad(parseFloat(propRotateY.value));
+            selected.rotation.z = THREE.MathUtils.degToRad(parseFloat(propRotateZ.value));
+            
+            const scale = parseFloat(propScale.value);
+            selected.scale.set(scale, scale, scale);
+
+            // Update element name
+            if (propName.value !== selected.userData.id) {
+                selected.userData.id = propName.value;
+                renderLayers();
+            }
+
+            // Update text properties
+            if (selected.userData.type === 'text') {
+                updateTextTexture();
+            }
+        }
+
+        function updateTextTexture() {
+            if (!selected || selected.userData.type !== 'text') return;
+
+            const opt = selected.userData.options;
+            const text = propText.value;
+            opt.size = parseInt(propTextSize.value);
+            opt.color = propColor.value;
+            opt.bg = propBgColor.value;
+            opt.border = propBorderColor.value;
+            opt.borderWidth = parseInt(propBorderWidth.value);
+
+            const texture = createTextTexture(text, opt);
+            selected.material.map = texture;
+            selected.material.needsUpdate = true;
+            selected.userData.text = text;
+        }
+
+        // === 3D PRESETS ===
+        function apply3DPreset(preset) {
+            if (!selected) return;
+
+            switch(preset) {
+                case 'flip':
+                    propRotateY.value = '180';
+                    propZ.value = '0.5';
+                    break;
+                case 'cube':
+                    // Add spinning animation
+                    animateObject(selected, 'spin');
+                    return;
+                case 'float':
+                    // Add floating animation
+                    animateObject(selected, 'float');
+                    return;
+                case 'reset':
+                    propRotateX.value = '0';
+                    propRotateY.value = '0';
+                    propRotateZ.value = '0';
+                    propZ.value = '0';
+                    propScale.value = '1';
+                    break;
+            }
+            applyPropertiesToElement();
+            saveState();
+        }
+
+        function animateObject(obj, type) {
+            const startTime = Date.now();
+            const duration = type === 'spin' ? 6000 : 4000;
+
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
+
+                if (progress < 1) {
+                    if (type === 'spin') {
+                        obj.rotation.x = progress * Math.PI * 4;
+                        obj.rotation.y = progress * Math.PI * 4;
+                        obj.rotation.z = progress * Math.PI * 4;
+                    } else if (type === 'float') {
+                        obj.position.z = Math.sin(progress * Math.PI * 4) * 0.5;
+                        obj.rotation.y = progress * Math.PI * 2;
+                    }
+                    requestAnimationFrame(animate);
+                } else {
+                    // Reset to original state
+                    if (type === 'spin') {
+                        obj.rotation.set(0, 0, 0);
+                    } else if (type === 'float') {
+                        obj.position.z = 0;
+                        obj.rotation.y = 0;
+                    }
+                    updateProperties();
+                }
+            }
+            animate();
+        }
+
+        // === LAYERS MANAGEMENT ===
+        function renderLayers() {
+            layersContent.innerHTML = '';
+            [...objects].reverse().forEach((obj, i) => {
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item';
+                layerItem.innerHTML = `
+                    <svg class="layer-icon" viewBox="0 0 24 24">
+                        ${getLayerIcon(obj.userData.type)}
+                    </svg>
+                    ${obj.userData.id}
+                `;
+                if (obj === selected) {
+                    layerItem.classList.add('selected');
+                }
+                layerItem.addEventListener('click', () => selectElement(obj));
+                layersContent.appendChild(layerItem);
+            });
+        }
+
+        function getLayerIcon(type) {
+            switch(type) {
+                case 'text': return '<path d="M4 17v-2h8v2H4zm0-6V9h12v2H4zm0-4V5h16v2H4z"/>';
+                case 'shape': return '<circle cx="12" cy="12" r="6"/>';
+                case 'rectangle': return '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>';
+                case 'cube': return '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>';
+                case 'image': return '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5"/><path d="M21 15l-5-5-5 5"/>';
+                default: return '<circle cx="12" cy="12" r="6"/>';
+            }
+        }
+
+        function updateLayersSelection() {
+            const layerItems = layersContent.querySelectorAll('.layer-item');
+            layerItems.forEach(item => item.classList.remove('selected'));
+            
+            if (!selected) return;
+            
+            const idx = objects.findIndex(obj => obj === selected);
+            if (idx === -1) return;
+            
+            const reverseIdx = objects.length - 1 - idx;
+            if (layerItems[reverseIdx]) {
+                layerItems[reverseIdx].classList.add('selected');
+            }
+        }
+
+        // === EXPORT FUNCTIONS ===
+        function exportToPNG() {
+            showLoading();
+            try {
+                const link = document.createElement('a');
+                link.download = 'editIQ-3d-export.png';
+                link.href = renderer.domElement.toDataURL('image/png');
+                link.click();
+                showNotification('PNG exported successfully!', 'success');
+            } catch (error) {
+                showNotification('Export failed: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // === EVENT LISTENERS ===
+        
+        // Tool buttons
+        addTextBtn.addEventListener('click', () => {
+            const mesh = createTextMesh('Edit Me');
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
+        });
+
+        addShapeBtn.addEventListener('click', () => {
+            const mesh = createShapeMesh();
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
+        });
+
+        addRectangleBtn.addEventListener('click', () => {
+            const mesh = createRectangleMesh();
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
+        });
+
+        addCubeBtn.addEventListener('click', () => {
+            const mesh = createCubeMesh();
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
+        });
+
+        addImageBtn.addEventListener('click', () => {
+            fileImageInput.click();
+        });
+
+        fileImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            handleImageUpload(file);
+            fileImageInput.value = '';
+        });
+
+        // Property controls
+        [propName, propX, propY, propZ, propRotateX, propRotateY, propRotateZ, propScale, 
+         propText, propTextSize, propColor, propBgColor, propBorderColor, propBorderWidth].forEach(input => {
+            if (input) {
+                input.addEventListener('input', applyPropertiesToElement);
+            }
+        });
+
+        // 3D Preset buttons
+        document.getElementById('preset-flip').addEventListener('click', () => apply3DPreset('flip'));
+        document.getElementById('preset-cube').addEventListener('click', () => apply3DPreset('cube'));
+        document.getElementById('preset-float').addEventListener('click', () => apply3DPreset('float'));
+        document.getElementById('preset-reset').addEventListener('click', () => apply3DPreset('reset'));
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'z':
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                            redo();
+                        } else {
+                            undo();
+                        }
+                        break;
+                    case 'y':
+                        e.preventDefault();
+                        redo();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        showNotification('Auto-save enabled', 'success');
+                        break;
+                }
+            } else if (e.key === 'Delete' && selected) {
+                scene.remove(selected);
+                const index = objects.indexOf(selected);
+                if (index > -1) {
+                    objects.splice(index, 1);
+                }
+                selected = null;
+                clearProperties();
+                renderLayers();
+                saveState();
+            }
+        });
+
+        // Top bar buttons
+        document.getElementById('btn-undo').addEventListener('click', undo);
+        document.getElementById('btn-redo').addEventListener('click', redo);
+        
+        document.getElementById('btn-new').addEventListener('click', () => {
+            if (confirm('Create new project? This will clear the current canvas.')) {
+                objects.forEach(obj => scene.remove(obj));
+                objects.length = 0;
+                selected = null;
+                clearProperties();
+                renderLayers();
+                history = [];
+                historyIndex = -1;
+                saveState();
+                showNotification('New project created', 'success');
+            }
+        });
+
+        document.getElementById('btn-save').addEventListener('click', () => {
+            const projectData = {
+                objects: objects.map(obj => ({
+                    id: obj.userData.id,
+                    type: obj.userData.type,
+                    position: obj.position.toArray(),
+                    rotation: obj.rotation.toArray(),
+                    scale: obj.scale.toArray(),
+                    text: obj.userData.text || '',
+                    options: obj.userData.options || {}
+                }))
+            };
+            const blob = new Blob([JSON.stringify(projectData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'editIQ-3d-project.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Project saved successfully!', 'success');
+        });
+
+        document.getElementById('btn-export-png').addEventListener('click', exportToPNG);
+        
+        document.getElementById('btn-export-mp4').addEventListener('click', () => {
+            showNotification('MP4 export coming soon!', 'warning');
+        });
+
+        // Theme switcher
+        themeSwitcher.addEventListener('change', (e) => {
+            document.body.classList.remove('theme-purple', 'theme-red', 'theme-green');
+            if (e.target.value !== 'default') {
+                document.body.classList.add('theme-' + e.target.value);
+            }
+            showNotification(`Theme changed to ${e.target.value}`, 'success');
+        });
+
+        // Zoom controls (camera controls)
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            camera.position.z = Math.max(0.5, camera.position.z - 0.2);
+            zoomLevel.textContent = Math.round((3 / camera.position.z) * 100) + '%';
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            camera.position.z = Math.min(10, camera.position.z + 0.2);
+            zoomLevel.textContent = Math.round((3 / camera.position.z) * 100) + '%';
+        });
+
+        document.getElementById('zoom-reset').addEventListener('click', () => {
+            camera.position.z = 3;
+            zoomLevel.textContent = '100%';
+        });
+    </script>
+</body>
+</html>
 
