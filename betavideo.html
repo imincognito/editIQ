@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>editIQ · 3D WebGL Editor</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+    h1 {
+      margin: 20px 0 10px;
+      font-size: 20px;
+      letter-spacing: 1px;
+    }
+    canvas {
+      margin: 10px 0;
+      border: 2px dashed #333;
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .toolbar button, .toolbar label {
+      background: #222;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .toolbar button:hover, .toolbar label:hover {
+      background: #333;
+    }
+    .toolbar input[type="file"] {
+      display: none;
+    }
+    .panel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 5px 0 20px;
+    }
+    .panel label {
+      font-size: 12px;
+      color: #bbb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .panel input[type="range"], .panel input[type="color"], .panel input[type="text"], .panel input[type="number"] {
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <h1>editIQ · 3D WebGL Editor</h1>
+  <div class="toolbar">
+    <label>Add Image<input type="file" id="image-upload" accept="image/*"></label>
+    <label>Add Video<input type="file" id="video-upload" accept="video/*"></label>
+    <button id="add-text">Add Text</button>
+    <button id="export">Export PNG</button>
+    <button id="record">Export Video (Quick)</button>
+  </div>
+  <canvas id="glcanvas" width="800" height="450"></canvas>
+  <div id="control-panel" class="panel"></div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+  <script>
+    let scene, camera, renderer, controls = {}, selected = null;
+    const objects = [];
+    let capturer = null;
+
+    init();
+    animate();
+
+    function init() {
+      const canvas = document.getElementById('glcanvas');
+      renderer = new THREE.WebGLRenderer({ canvas, preserveDrawingBuffer: true });
+      renderer.setClearColor(0x0d0d0d);
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 1000);
+      camera.position.z = 3;
+
+      canvas.addEventListener('mousedown', onCanvasClick);
+      document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+      document.getElementById('video-upload').addEventListener('change', handleVideoUpload);
+      document.getElementById('add-text').addEventListener('click', () => addText('Edit Me'));
+      document.getElementById('export').addEventListener('click', exportSnapshot);
+      document.getElementById('record').addEventListener('click', exportVideoQuick);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (capturer) capturer.capture(renderer.domElement);
+      renderer.render(scene, camera);
+    }
+
+    function onCanvasClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      const mouse = new THREE.Vector2(x, y);
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(objects);
+      if (intersects.length > 0) {
+        selected = intersects[0].object;
+        updateControls();
+      }
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const texture = new THREE.Texture(img);
+          texture.needsUpdate = true;
+          const material = new THREE.MeshBasicMaterial({ map: texture });
+          const geometry = new THREE.PlaneGeometry(1.6, 0.9);
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(0, 0, 0);
+          scene.add(mesh);
+          objects.push(mesh);
+          selected = mesh;
+          updateControls();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleVideoUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const video = document.createElement('video');
+      video.src = url;
+      video.muted = true;
+      video.loop = true;
+      video.play();
+      const texture = new THREE.VideoTexture(video);
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      const geometry = new THREE.PlaneGeometry(1.6, 0.9);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(0, 0, 0);
+      scene.add(mesh);
+      objects.push(mesh);
+      selected = mesh;
+      updateControls();
+    }
+
+    function exportSnapshot() {
+      const link = document.createElement('a');
+      link.download = 'editIQ-3d-export.png';
+      link.href = renderer.domElement.toDataURL('image/png');
+      link.click();
+    }
+
+    function exportVideoQuick() {
+      capturer = new CCapture({ format: 'webm', framerate: 30 });
+      capturer.start();
+      setTimeout(() => {
+        capturer.stop();
+        capturer.save();
+        capturer = null;
+      }, 5000); // Capture 5 seconds
+    }
+  </script>
+</body>
+</html>
