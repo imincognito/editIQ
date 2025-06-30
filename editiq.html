@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -271,113 +272,10 @@
             transform-style: preserve-3d;
         }
 
-        /* === DRAGGABLE ELEMENTS === */
-        .draggable {
-            position: absolute;
-            user-select: none;
-            cursor: move;
-            border-radius: 8px;
-            box-shadow: 0 0 15px var(--primary-glow);
-            transition: all 0.3s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            background: transparent;
-            border: 2px solid transparent;
-            transform-style: preserve-3d;
-        }
-
-        .draggable.selected {
-            border-color: var(--primary-glow);
-            box-shadow: 0 0 25px 5px var(--primary-glow);
-            background: rgba(0, 255, 255, 0.1);
-        }
-
-        .draggable.text {
-            color: var(--accent-color);
-            font-weight: 700;
-            font-size: 1.4rem;
-            padding: 8px 12px;
-            white-space: nowrap;
-            user-select: text;
-            cursor: text;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(5px);
-            text-shadow: 0 0 10px var(--primary-glow);
-            border-radius: 6px;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .draggable.image img {
-            max-width: 100%;
-            max-height: 100%;
-            user-select: none;
-            pointer-events: none;
-            display: block;
-            border-radius: 6px;
-        }
-
-        .draggable.video video {
-            max-width: 100%;
-            max-height: 100%;
-            user-select: none;
-            pointer-events: none;
-            display: block;
-            border-radius: 6px;
-        }
-
-        .draggable.shape {
-            background: var(--accent-color);
-            opacity: 0.8;
-            user-select: none;
-            box-shadow: 0 0 20px var(--primary-glow);
-        }
-
-        .draggable.cube {
-            background: var(--accent-color);
-            opacity: 0.8;
-            user-select: none;
-            box-shadow: 0 0 20px var(--primary-glow);
-            position: relative;
-        }
-
-        .draggable.cube::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            background: rgba(0, 255, 255, 0.2);
-            transform: translateZ(-20px);
-            border-radius: 8px;
-        }
-
-        /* === RESIZERS === */
-        .resizer {
-            position: absolute;
-            width: 14px;
-            height: 14px;
-            background: var(--primary-glow);
-            border: 2px solid var(--bg-dark);
-            border-radius: 50%;
-            z-index: 1000;
-            opacity: 0;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 10px var(--primary-glow);
-        }
-
-        .draggable.selected .resizer {
-            opacity: 1;
-        }
-
-        .resizer:hover {
-            transform: scale(1.3);
-            box-shadow: 0 0 15px var(--primary-glow);
+        #glcanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
         }
 
         /* === PROPERTIES PANEL === */
@@ -782,7 +680,9 @@
 
     <!-- MAIN CANVAS -->
     <main class="canvas" tabindex="0" aria-label="Editing Canvas">
-        <div class="canvas-inner" id="canvas"></div>
+        <div class="canvas-inner">
+            <canvas id="glcanvas"></canvas>
+        </div>
     </main>
 
     <!-- PROPERTIES PANEL -->
@@ -794,50 +694,18 @@
         </div>
 
         <h2>Position & Size</h2>
-        <div class="property-row">
+        <div class="property-row-3">
             <div class="property-group">
                 <label for="prop-x">X Position</label>
-                <input type="number" id="prop-x" />
+                <input type="range" id="prop-x" min="-5" max="5" step="0.01" value="0" />
             </div>
             <div class="property-group">
                 <label for="prop-y">Y Position</label>
-                <input type="number" id="prop-y" />
-            </div>
-        </div>
-        <div class="property-row">
-            <div class="property-group">
-                <label for="prop-width">Width</label>
-                <input type="number" id="prop-width" />
+                <input type="range" id="prop-y" min="-5" max="5" step="0.01" value="0" />
             </div>
             <div class="property-group">
-                <label for="prop-height">Height</label>
-                <input type="number" id="prop-height" />
-            </div>
-        </div>
-
-        <h2>2D Transform</h2>
-        <div class="property-group">
-            <label for="prop-rotation">Rotation (degrees)</label>
-            <input type="range" id="prop-rotation" min="0" max="360" step="1" value="0" />
-        </div>
-        <div class="property-row">
-            <div class="property-group">
-                <label for="prop-scale-x">Scale X</label>
-                <input type="range" id="prop-scale-x" min="0.1" max="3" step="0.1" value="1" />
-            </div>
-            <div class="property-group">
-                <label for="prop-scale-y">Scale Y</label>
-                <input type="range" id="prop-scale-y" min="0.1" max="3" step="0.1" value="1" />
-            </div>
-        </div>
-        <div class="property-row">
-            <div class="property-group">
-                <label for="prop-skew-x">Skew X</label>
-                <input type="range" id="prop-skew-x" min="-45" max="45" step="1" value="0" />
-            </div>
-            <div class="property-group">
-                <label for="prop-skew-y">Skew Y</label>
-                <input type="range" id="prop-skew-y" min="-45" max="45" step="1" value="0" />
+                <label for="prop-z">Z Position</label>
+                <input type="range" id="prop-z" min="-5" max="5" step="0.01" value="0" />
             </div>
         </div>
 
@@ -845,26 +713,21 @@
         <div class="property-row-3">
             <div class="property-group">
                 <label for="prop-rotate-x">Rotate X</label>
-                <input type="range" id="prop-rotate-x" min="0" max="360" step="1" value="0" />
+                <input type="range" id="prop-rotate-x" min="-180" max="180" step="1" value="0" />
             </div>
             <div class="property-group">
                 <label for="prop-rotate-y">Rotate Y</label>
-                <input type="range" id="prop-rotate-y" min="0" max="360" step="1" value="0" />
+                <input type="range" id="prop-rotate-y" min="-180" max="180" step="1" value="0" />
             </div>
             <div class="property-group">
                 <label for="prop-rotate-z">Rotate Z</label>
-                <input type="range" id="prop-rotate-z" min="0" max="360" step="1" value="0" />
+                <input type="range" id="prop-rotate-z" min="-180" max="180" step="1" value="0" />
             </div>
         </div>
-        <div class="property-row">
-            <div class="property-group">
-                <label for="prop-translate-z">Translate Z</label>
-                <input type="range" id="prop-translate-z" min="-200" max="200" step="5" value="0" />
-            </div>
-            <div class="property-group">
-                <label for="prop-perspective">Perspective</label>
-                <input type="range" id="prop-perspective" min="100" max="3000" step="50" value="1000" />
-            </div>
+
+        <div class="property-group">
+            <label for="prop-scale">Scale</label>
+            <input type="range" id="prop-scale" min="0.1" max="3" step="0.01" value="1" />
         </div>
 
         <h2>3D Presets</h2>
@@ -880,61 +743,25 @@
             <label for="prop-text">Text Content</label>
             <input type="text" id="prop-text" />
         </div>
-        <div class="property-group" id="text-font-size-group" style="display: none;">
-            <label for="prop-font-size">Font Size</label>
-            <input type="range" id="prop-font-size" min="10" max="100" step="1" value="24" />
+        <div class="property-group" id="text-size-group" style="display: none;">
+            <label for="prop-text-size">Font Size</label>
+            <input type="number" id="prop-text-size" min="10" max="100" value="32" />
         </div>
-        <div class="property-group" id="text-color-group" style="display: none;">
-            <label for="prop-text-color">Text Color</label>
-            <input type="color" id="prop-text-color" value="#00ffff" />
+        <div class="property-group" id="color-group" style="display: none;">
+            <label for="prop-color">Text Color</label>
+            <input type="color" id="prop-color" value="#ffffff" />
         </div>
-        <div class="property-group" id="text-bg-group" style="display: none;">
+        <div class="property-group" id="bg-color-group" style="display: none;">
             <label for="prop-bg-color">Background Color</label>
             <input type="color" id="prop-bg-color" value="#000000" />
         </div>
-        <div class="property-group" id="text-border-group" style="display: none;">
+        <div class="property-group" id="border-group" style="display: none;">
             <label for="prop-border-color">Border Color</label>
-            <input type="color" id="prop-border-color" value="#00ffff" />
+            <input type="color" id="prop-border-color" value="#ff0000" />
         </div>
-        <div class="property-group" id="text-border-width-group" style="display: none;">
+        <div class="property-group" id="border-width-group" style="display: none;">
             <label for="prop-border-width">Border Width</label>
-            <input type="range" id="prop-border-width" min="0" max="10" step="1" value="2" />
-        </div>
-        <div class="property-group" id="text-radius-group" style="display: none;">
-            <label for="prop-radius">Border Radius</label>
-            <input type="range" id="prop-radius" min="0" max="30" step="1" value="6" />
-        </div>
-
-        <h2>Appearance</h2>
-        <div class="property-group">
-            <label for="prop-opacity">Opacity</label>
-            <input type="range" id="prop-opacity" min="0" max="100" step="1" value="100" />
-        </div>
-        <div class="property-group" id="color-group" style="display: none;">
-            <label for="prop-color">Color</label>
-            <input type="color" id="prop-color" value="#00ffff" />
-        </div>
-
-        <h2>Filters</h2>
-        <div class="property-group">
-            <label for="filter-brightness">Brightness</label>
-            <input type="range" id="filter-brightness" min="0" max="200" value="100" />
-        </div>
-        <div class="property-group">
-            <label for="filter-contrast">Contrast</label>
-            <input type="range" id="filter-contrast" min="0" max="200" value="100" />
-        </div>
-        <div class="property-group">
-            <label for="filter-saturate">Saturation</label>
-            <input type="range" id="filter-saturate" min="0" max="300" value="100" />
-        </div>
-        <div class="property-group">
-            <label for="filter-blur">Blur</label>
-            <input type="range" id="filter-blur" min="0" max="20" value="0" />
-        </div>
-        <div class="property-group">
-            <label for="filter-hue">Hue Rotate</label>
-            <input type="range" id="filter-hue" min="0" max="360" value="0" />
+            <input type="number" id="prop-border-width" min="0" max="10" value="2" />
         </div>
     </aside>
 
@@ -963,9 +790,17 @@
     <!-- NOTIFICATION CONTAINER -->
     <div id="notification-container"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script>
-        // === GLOBALS ===
-        const canvas = document.getElementById('canvas');
+        // === THREE.JS GLOBALS ===
+        let scene, camera, renderer, selected = null;
+        const objects = [];
+        let elementCounter = 0;
+        let history = [];
+        let historyIndex = -1;
+
+        // === UI GLOBALS ===
+        const canvas = document.getElementById('glcanvas');
         const addTextBtn = document.getElementById('add-text');
         const addShapeBtn = document.getElementById('add-shape');
         const addImageBtn = document.getElementById('add-image');
@@ -979,44 +814,17 @@
         const propName = document.getElementById('prop-name');
         const propX = document.getElementById('prop-x');
         const propY = document.getElementById('prop-y');
-        const propWidth = document.getElementById('prop-width');
-        const propHeight = document.getElementById('prop-height');
+        const propZ = document.getElementById('prop-z');
         const propText = document.getElementById('prop-text');
-        const propRotation = document.getElementById('prop-rotation');
-        const propOpacity = document.getElementById('prop-opacity');
-        const propColor = document.getElementById('prop-color');
-
-        // Enhanced text controls
-        const propFontSize = document.getElementById('prop-font-size');
-        const propTextColor = document.getElementById('prop-text-color');
-        const propBgColor = document.getElementById('prop-bg-color');
-        const propBorderColor = document.getElementById('prop-border-color');
-        const propBorderWidth = document.getElementById('prop-border-width');
-        const propRadius = document.getElementById('prop-radius');
-
-        // 3D Transform controls
+        const propTextSize = document.getElementById('prop-text-size');
         const propRotateX = document.getElementById('prop-rotate-x');
         const propRotateY = document.getElementById('prop-rotate-y');
         const propRotateZ = document.getElementById('prop-rotate-z');
-        const propTranslateZ = document.getElementById('prop-translate-z');
-        const propPerspective = document.getElementById('prop-perspective');
-        const propScaleX = document.getElementById('prop-scale-x');
-        const propScaleY = document.getElementById('prop-scale-y');
-        const propSkewX = document.getElementById('prop-skew-x');
-        const propSkewY = document.getElementById('prop-skew-y');
-
-        // Filter controls
-        const filterBrightness = document.getElementById('filter-brightness');
-        const filterContrast = document.getElementById('filter-contrast');
-        const filterSaturate = document.getElementById('filter-saturate');
-        const filterBlur = document.getElementById('filter-blur');
-        const filterHue = document.getElementById('filter-hue');
-
-        // Preset buttons
-        const presetFlip = document.getElementById('preset-flip');
-        const presetCube = document.getElementById('preset-cube');
-        const presetFloat = document.getElementById('preset-float');
-        const presetReset = document.getElementById('preset-reset');
+        const propScale = document.getElementById('prop-scale');
+        const propColor = document.getElementById('prop-color');
+        const propBgColor = document.getElementById('prop-bg-color');
+        const propBorderColor = document.getElementById('prop-border-color');
+        const propBorderWidth = document.getElementById('prop-border-width');
 
         // UI elements
         const layersContent = document.getElementById('layers-content');
@@ -1024,15 +832,60 @@
         const zoomLevel = document.getElementById('zoom-level');
         const loading = document.getElementById('loading');
 
-        // State
-        let selectedElement = null;
-        let currentZoom = 1;
-        let elementCounter = 0;
-        let layers = [];
-        let history = [];
-        let historyIndex = -1;
-        let isDragging = false;
-        let isResizing = false;
+        // === INITIALIZATION ===
+        init();
+        animate();
+
+        function init() {
+            // Setup Three.js renderer
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                preserveDrawingBuffer: true,
+                antialias: true 
+            });
+            renderer.setClearColor(0x0d0d0d);
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+            // Setup scene and camera
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            camera.position.z = 3;
+
+            // Event listeners
+            canvas.addEventListener('mousedown', onCanvasClick);
+            window.addEventListener('resize', onWindowResize);
+
+            // Initialize first state
+            saveState();
+            showNotification('editIQ 2.0 — 3D Enhanced loaded successfully!', 'success');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        }
+
+        function onCanvasClick(e) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            const mouse = new THREE.Vector2(x, y);
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+
+            if (intersects.length > 0) {
+                selectElement(intersects[0].object);
+            } else {
+                selectElement(null);
+            }
+        }
 
         // === UTILITY FUNCTIONS ===
         function generateId() {
@@ -1059,15 +912,17 @@
             loading.style.display = 'none';
         }
 
+        // === STATE MANAGEMENT ===
         function saveState() {
             const state = {
-                elements: layers.map(el => ({
-                    id: el.id,
-                    type: el.dataset.type,
-                    style: el.style.cssText,
-                    content: el.textContent || '',
-                    src: el.querySelector('img')?.src || el.querySelector('video')?.src || '',
-                    userData: el.userData || {}
+                objects: objects.map(obj => ({
+                    id: obj.userData.id,
+                    type: obj.userData.type,
+                    position: obj.position.toArray(),
+                    rotation: obj.rotation.toArray(),
+                    scale: obj.scale.toArray(),
+                    text: obj.userData.text || '',
+                    options: obj.userData.options || {}
                 }))
             };
             history = history.slice(0, historyIndex + 1);
@@ -1096,564 +951,357 @@
         }
 
         function restoreState(state) {
-            // Clear canvas
-            canvas.innerHTML = '';
-            layers = [];
+            // Clear scene
+            objects.forEach(obj => scene.remove(obj));
+            objects.length = 0;
 
-            // Restore elements
-            state.elements.forEach(elementData => {
-                const el = createElement(elementData.type, elementData.content, elementData.src);
-                el.id = elementData.id;
-                el.style.cssText = elementData.style;
-                el.userData = elementData.userData || {};
-                canvas.appendChild(el);
-                layers.push(el);
+            // Restore objects
+            state.objects.forEach(objData => {
+                let obj;
+                switch(objData.type) {
+                    case 'text':
+                        obj = createTextMesh(objData.text, objData.options);
+                        break;
+                    case 'shape':
+                        obj = createShapeMesh();
+                        break;
+                    case 'rectangle':
+                        obj = createRectangleMesh();
+                        break;
+                    case 'cube':
+                        obj = createCubeMesh();
+                        break;
+                }
+                if (obj) {
+                    obj.userData.id = objData.id;
+                    obj.userData.type = objData.type;
+                    obj.position.fromArray(objData.position);
+                    obj.rotation.fromArray(objData.rotation);
+                    obj.scale.fromArray(objData.scale);
+                    scene.add(obj);
+                    objects.push(obj);
+                }
             });
 
             renderLayers();
-            if (selectedElement && !document.contains(selectedElement)) {
-                selectedElement = null;
+            if (selected && !objects.includes(selected)) {
+                selected = null;
                 clearProperties();
             }
         }
 
-        // === DRAGGABLE AND RESIZABLE ===
-        function makeDraggableAndResizable(el) {
-            el.style.position = 'absolute';
-
-            // Dragging
-            let dragOffsetX = 0, dragOffsetY = 0;
-
-            el.addEventListener('mousedown', (e) => {
-                if (e.target.classList.contains('resizer')) return;
-                e.preventDefault();
-                isDragging = true;
-
-                const rect = el.getBoundingClientRect();
-                const canvasRect = canvas.getBoundingClientRect();
-                dragOffsetX = e.clientX - rect.left;
-                dragOffsetY = e.clientY - rect.top;
-
-                selectElement(el);
-                el.style.zIndex = 1000;
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (!isDragging || selectedElement !== el) return;
-                e.preventDefault();
-
-                const canvasRect = canvas.getBoundingClientRect();
-                let x = (e.clientX - dragOffsetX - canvasRect.left) / currentZoom;
-                let y = (e.clientY - dragOffsetY - canvasRect.top) / currentZoom;
-
-                // Clamp inside canvas
-                x = Math.max(0, Math.min(x, canvas.clientWidth / currentZoom - el.offsetWidth));
-                y = Math.max(0, Math.min(y, canvas.clientHeight / currentZoom - el.offsetHeight));
-
-                el.style.left = x + 'px';
-                el.style.top = y + 'px';
-                updateProperties(el);
-            });
-
-            window.addEventListener('mouseup', () => {
-                if (isDragging) {
-                    isDragging = false;
-                    if (selectedElement) {
-                        selectedElement.style.zIndex = layers.indexOf(selectedElement) + 10;
-                        saveState();
-                    }
-                }
-            });
-
-            // Create resizers
-            createResizers(el);
-        }
-
-        function createResizers(el) {
-            const corners = ['nw', 'ne', 'sw', 'se'];
-            corners.forEach(corner => {
-                const resizer = document.createElement('div');
-                resizer.className = 'resizer ' + corner;
-                resizer.style.cursor = corner + '-resize';
-
-                switch(corner) {
-                    case 'nw': resizer.style.left = '-7px'; resizer.style.top = '-7px'; break;
-                    case 'ne': resizer.style.right = '-7px'; resizer.style.top = '-7px'; break;
-                    case 'sw': resizer.style.left = '-7px'; resizer.style.bottom = '-7px'; break;
-                    case 'se': resizer.style.right = '-7px'; resizer.style.bottom = '-7px'; break;
-                }
-
-                el.appendChild(resizer);
-
-                resizer.addEventListener('mousedown', (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    isResizing = true;
-
-                    const startX = e.clientX;
-                    const startY = e.clientY;
-                    const startWidth = el.offsetWidth;
-                    const startHeight = el.offsetHeight;
-                    const startLeft = parseInt(el.style.left) || 0;
-                    const startTop = parseInt(el.style.top) || 0;
-
-                    function onMouseMove(ev) {
-                        const dx = (ev.clientX - startX) / currentZoom;
-                        const dy = (ev.clientY - startY) / currentZoom;
-
-                        if (corner.includes('e')) {
-                            el.style.width = Math.max(30, startWidth + dx) + 'px';
-                        }
-                        if (corner.includes('s')) {
-                            el.style.height = Math.max(30, startHeight + dy) + 'px';
-                        }
-                        if (corner.includes('w')) {
-                            const newWidth = Math.max(30, startWidth - dx);
-                            el.style.width = newWidth + 'px';
-                            el.style.left = (startLeft + dx) + 'px';
-                        }
-                        if (corner.includes('n')) {
-                            const newHeight = Math.max(30, startHeight - dy);
-                            el.style.height = newHeight + 'px';
-                            el.style.top = (startTop + dy) + 'px';
-                        }
-
-                        updateProperties(el);
-                    }
-
-                    function onMouseUp() {
-                        isResizing = false;
-                        window.removeEventListener('mousemove', onMouseMove);
-                        window.removeEventListener('mouseup', onMouseUp);
-                        saveState();
-                    }
-
-                    window.addEventListener('mousemove', onMouseMove);
-                    window.addEventListener('mouseup', onMouseUp);
-                });
-            });
-        }
-
-        // === ELEMENT CREATION ===
-        function createElement(type, content = '', src = '') {
-            const el = document.createElement('div');
-            el.id = generateId();
-            el.classList.add('draggable', type);
-            el.dataset.type = type;
-
-            // Initialize userData for enhanced properties
-            el.userData = {
-                text: content || 'New Text',
-                options: {
-                    size: 24,
-                    color: '#00ffff',
-                    bg: 'rgba(0, 0, 0, 0.3)',
-                    border: '#00ffff',
-                    borderWidth: 2,
-                    radius: 6
-                }
+        // === IMAGE HANDLING ===
+        function handleImageUpload(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const texture = new THREE.Texture(img);
+                    texture.needsUpdate = true;
+                    const material = new THREE.MeshBasicMaterial({ map: texture });
+                    const geometry = new THREE.PlaneGeometry(1.6, 0.9);
+                    const mesh = new THREE.Mesh(geometry, material);
+                    
+                    mesh.userData.id = generateId();
+                    mesh.userData.type = 'image';
+                    mesh.position.set(0, 0, 0);
+                    
+                    scene.add(mesh);
+                    objects.push(mesh);
+                    selectElement(mesh);
+                    renderLayers();
+                    saveState();
+                };
+                img.src = reader.result;
             };
+            reader.readAsDataURL(file);
+        }
 
-            switch(type) {
-                case 'text':
-                    el.textContent = content || 'New Text';
-                    el.style.width = 'auto';
-                    el.style.height = 'auto';
-                    el.style.minWidth = '100px';
-                    el.style.fontSize = el.userData.options.size + 'px';
-                    el.style.color = el.userData.options.color;
-                    el.style.backgroundColor = el.userData.options.bg;
-                    el.style.border = `${el.userData.options.borderWidth}px solid ${el.userData.options.border}`;
-                    el.style.borderRadius = el.userData.options.radius + 'px';
-                    break;
-                case 'shape':
-                    el.style.width = '100px';
-                    el.style.height = '100px';
-                    el.style.borderRadius = '50%';
-                    break;
-                case 'rectangle':
-                    el.style.width = '150px';
-                    el.style.height = '100px';
-                    el.style.borderRadius = '8px';
-                    break;
-                case 'cube':
-                    el.style.width = '120px';
-                    el.style.height = '120px';
-                    el.style.borderRadius = '8px';
-                    el.style.transformStyle = 'preserve-3d';
-                    break;
-                case 'image':
-                    const img = document.createElement('img');
-                    img.src = src;
-                    img.alt = 'Image';
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.objectFit = 'cover';
-                    el.appendChild(img);
-                    el.style.width = '200px';
-                    el.style.height = '150px';
-                    break;
-                case 'video':
-                    const video = document.createElement('video');
-                    video.src = src;
-                    video.controls = true;
-                    video.muted = true;
-                    video.style.width = '100%';
-                    video.style.height = '100%';
-                    el.appendChild(video);
-                    el.style.width = '320px';
-                    el.style.height = '180px';
-                    break;
-            }
+        // === TEXT CREATION ===
+        function createTextTexture(text, options) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
 
-            // Default positioning
-            el.style.left = (50 + layers.length * 20) + 'px';
-            el.style.top = (50 + layers.length * 20) + 'px';
+            ctx.fillStyle = options.bg;
+            ctx.strokeStyle = options.border;
+            ctx.lineWidth = options.borderWidth;
 
-            makeDraggableAndResizable(el);
-            return el;
+            const w = canvas.width, h = canvas.height;
+            const r = options.radius || 10;
+
+            ctx.beginPath();
+            ctx.moveTo(r, 0); ctx.lineTo(w - r, 0);
+            ctx.quadraticCurveTo(w, 0, w, r);
+            ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h);
+            ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r);
+            ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath(); 
+            ctx.fill(); 
+            if (options.borderWidth > 0) ctx.stroke();
+
+            ctx.fillStyle = options.color;
+            ctx.font = `${options.size}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function createTextMesh(text, options) {
+            const defaultOptions = {
+                size: 32,
+                color: "#ffffff",
+                bg: "#000000",
+                border: "#ff0000",
+                borderWidth: 2,
+                radius: 10
+            };
+            const opts = { ...defaultOptions, ...options };
+            
+            const texture = createTextTexture(text, opts);
+            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            const geometry = new THREE.PlaneGeometry(1.6, 0.8);
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.text = text;
+            mesh.userData.options = opts;
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'text';
+            
+            return mesh;
+        }
+
+        function createShapeMesh() {
+            const geometry = new THREE.CircleGeometry(0.5, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'shape';
+            
+            return mesh;
+        }
+
+        function createRectangleMesh() {
+            const geometry = new THREE.PlaneGeometry(1.5, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'rectangle';
+            
+            return mesh;
+        }
+
+        function createCubeMesh() {
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.userData.id = generateId();
+            mesh.userData.type = 'cube';
+            
+            return mesh;
         }
 
         // === ELEMENT SELECTION ===
-        function selectElement(el) {
-            if (selectedElement) {
-                selectedElement.classList.remove('selected');
-            }
-            selectedElement = el;
-            selectedElement.classList.add('selected');
-            updateProperties(el);
-            updateLayersSelection(el);
+        function selectElement(obj) {
+            selected = obj;
+            updateProperties();
+            updateLayersSelection();
         }
 
-        function updateProperties(el) {
-            if (!el) return;
+        function updateProperties() {
+            if (!selected) {
+                clearProperties();
+                return;
+            }
 
-            const x = parseInt(el.style.left) || 0;
-            const y = parseInt(el.style.top) || 0;
-            const width = el.offsetWidth;
-            const height = el.offsetHeight;
-            const rotation = getRotation(el);
-            const opacity = parseFloat(el.style.opacity || 1) * 100;
-
-            propName.value = el.id;
-            propX.value = x;
-            propY.value = y;
-            propWidth.value = width;
-            propHeight.value = height;
-            propRotation.value = rotation;
-            propOpacity.value = opacity;
-
-            // Get 3D transform values
-            const transform = el.style.transform || '';
-            propRotateX.value = getTransformValue(transform, 'rotateX', 0);
-            propRotateY.value = getTransformValue(transform, 'rotateY', 0);
-            propRotateZ.value = getTransformValue(transform, 'rotateZ', 0);
-            propTranslateZ.value = getTransformValue(transform, 'translateZ', 0);
-            propScaleX.value = getTransformValue(transform, 'scaleX', 1);
-            propScaleY.value = getTransformValue(transform, 'scaleY', 1);
-            propSkewX.value = getTransformValue(transform, 'skewX', 0);
-            propSkewY.value = getTransformValue(transform, 'skewY', 0);
+            propName.value = selected.userData.id || '';
+            propX.value = selected.position.x;
+            propY.value = selected.position.y;
+            propZ.value = selected.position.z;
+            propRotateX.value = THREE.MathUtils.radToDeg(selected.rotation.x);
+            propRotateY.value = THREE.MathUtils.radToDeg(selected.rotation.y);
+            propRotateZ.value = THREE.MathUtils.radToDeg(selected.rotation.z);
+            propScale.value = selected.scale.x;
 
             // Show/hide relevant controls
-            const textGroups = [
-                'text-content-group', 'text-font-size-group', 'text-color-group',
-                'text-bg-group', 'text-border-group', 'text-border-width-group', 'text-radius-group'
-            ];
+            const textGroup = document.getElementById('text-content-group');
+            const textSizeGroup = document.getElementById('text-size-group');
             const colorGroup = document.getElementById('color-group');
+            const bgColorGroup = document.getElementById('bg-color-group');
+            const borderGroup = document.getElementById('border-group');
+            const borderWidthGroup = document.getElementById('border-width-group');
 
-            // Hide all text groups first
-            textGroups.forEach(groupId => {
-                document.getElementById(groupId).style.display = 'none';
-            });
-
-            if (el.dataset.type === 'text') {
-                // Show text-specific controls
-                textGroups.forEach(groupId => {
-                    document.getElementById(groupId).style.display = 'block';
-                });
-
-                // Update text properties
-                propText.value = el.userData.text || el.textContent;
-                propFontSize.value = el.userData.options.size || 24;
-                propTextColor.value = el.userData.options.color || '#00ffff';
-                propBgColor.value = rgbToHex(el.userData.options.bg || 'rgba(0, 0, 0, 0.3)');
-                propBorderColor.value = el.userData.options.border || '#00ffff';
-                propBorderWidth.value = el.userData.options.borderWidth || 2;
-                propRadius.value = el.userData.options.radius || 6;
-
-                colorGroup.style.display = 'none';
+            if (selected.userData.type === 'text') {
+                propText.value = selected.userData.text || '';
+                propTextSize.value = selected.userData.options?.size || 32;
+                propColor.value = selected.userData.options?.color || '#ffffff';
+                propBgColor.value = selected.userData.options?.bg || '#000000';
+                propBorderColor.value = selected.userData.options?.border || '#ff0000';
+                propBorderWidth.value = selected.userData.options?.borderWidth || 2;
+                
+                textGroup.style.display = 'block';
+                textSizeGroup.style.display = 'block';
+                colorGroup.style.display = 'block';
+                bgColorGroup.style.display = 'block';
+                borderGroup.style.display = 'block';
+                borderWidthGroup.style.display = 'block';
             } else {
-                if (el.dataset.type === 'shape' || el.dataset.type === 'rectangle' || el.dataset.type === 'cube') {
-                    colorGroup.style.display = 'block';
-                    propColor.value = rgbToHex(getComputedStyle(el).backgroundColor);
-                } else {
-                    colorGroup.style.display = 'none';
-                }
+                textGroup.style.display = 'none';
+                textSizeGroup.style.display = 'none';
+                colorGroup.style.display = 'none';
+                bgColorGroup.style.display = 'none';
+                borderGroup.style.display = 'none';
+                borderWidthGroup.style.display = 'none';
             }
-
-            // Update filters
-            const filterStyle = el.style.filter || '';
-            filterBrightness.value = getFilterValue(filterStyle, 'brightness', 1) * 100;
-            filterContrast.value = getFilterValue(filterStyle, 'contrast', 1) * 100;
-            filterSaturate.value = getFilterValue(filterStyle, 'saturate', 1) * 100;
-            filterBlur.value = getFilterValue(filterStyle, 'blur', 0);
-            filterHue.value = getFilterValue(filterStyle, 'hue-rotate', 0);
-        }
-
-        function applyPropertiesToElement() {
-            if (!selectedElement) return;
-
-            const x = parseInt(propX.value) || 0;
-            const y = parseInt(propY.value) || 0;
-            const w = parseInt(propWidth.value) || selectedElement.offsetWidth;
-            const h = parseInt(propHeight.value) || selectedElement.offsetHeight;
-            const rotation = parseInt(propRotation.value) || 0;
-            const opacity = parseInt(propOpacity.value) || 100;
-
-            // 3D Transform values
-            const rotateX = parseInt(propRotateX.value) || 0;
-            const rotateY = parseInt(propRotateY.value) || 0;
-            const rotateZ = parseInt(propRotateZ.value) || 0;
-            const translateZ = parseInt(propTranslateZ.value) || 0;
-            const scaleX = parseFloat(propScaleX.value) || 1;
-            const scaleY = parseFloat(propScaleY.value) || 1;
-            const skewX = parseInt(propSkewX.value) || 0;
-            const skewY = parseInt(propSkewY.value) || 0;
-            const perspective = parseInt(propPerspective.value) || 1000;
-
-            selectedElement.style.left = x + 'px';
-            selectedElement.style.top = y + 'px';
-            selectedElement.style.width = w + 'px';
-            selectedElement.style.height = h + 'px';
-            selectedElement.style.opacity = opacity / 100;
-
-            // Apply 3D transforms
-            const transformString = `
-                perspective(${perspective}px)
-                rotateX(${rotateX}deg)
-                rotateY(${rotateY}deg)
-                rotateZ(${rotateZ}deg)
-                translateZ(${translateZ}px)
-                scaleX(${scaleX})
-                scaleY(${scaleY})
-                skewX(${skewX}deg)
-                skewY(${skewY}deg)
-                rotate(${rotation}deg)
-            `.replace(/\s+/g, ' ').trim();
-
-            selectedElement.style.transform = transformString;
-            selectedElement.style.transformStyle = 'preserve-3d';
-
-            // Apply filters
-            const brightness = filterBrightness.value;
-            const contrast = filterContrast.value;
-            const saturate = filterSaturate.value;
-            const blur = filterBlur.value;
-            const hue = filterHue.value;
-
-            selectedElement.style.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) blur(${blur}px) hue-rotate(${hue}deg)`;
-
-            // Apply text properties
-            if (selectedElement.dataset.type === 'text') {
-                updateTextElement();
-            } else if (selectedElement.dataset.type === 'shape' || selectedElement.dataset.type === 'rectangle' || selectedElement.dataset.type === 'cube') {
-                selectedElement.style.backgroundColor = propColor.value;
-            }
-
-            // Update element name
-            if (propName.value !== selectedElement.id) {
-                selectedElement.id = propName.value;
-                renderLayers();
-            }
-        }
-
-        function updateTextElement() {
-            if (!selectedElement || selectedElement.dataset.type !== 'text') return;
-
-            const text = propText.value;
-            const fontSize = parseInt(propFontSize.value);
-            const textColor = propTextColor.value;
-            const bgColor = propBgColor.value;
-            const borderColor = propBorderColor.value;
-            const borderWidth = parseInt(propBorderWidth.value);
-            const radius = parseInt(propRadius.value);
-
-            // Update userData
-            selectedElement.userData.text = text;
-            selectedElement.userData.options = {
-                size: fontSize,
-                color: textColor,
-                bg: bgColor,
-                border: borderColor,
-                borderWidth: borderWidth,
-                radius: radius
-            };
-
-            // Apply styles
-            selectedElement.textContent = text;
-            selectedElement.style.fontSize = fontSize + 'px';
-            selectedElement.style.color = textColor;
-            selectedElement.style.backgroundColor = bgColor;
-            selectedElement.style.border = `${borderWidth}px solid ${borderColor}`;
-            selectedElement.style.borderRadius = radius + 'px';
         }
 
         function clearProperties() {
             propName.value = '';
-            propX.value = '';
-            propY.value = '';
-            propWidth.value = '';
-            propHeight.value = '';
-            propRotation.value = '0';
-            propOpacity.value = '100';
-            propText.value = '';
-
-            // Clear enhanced text properties
-            propFontSize.value = '24';
-            propTextColor.value = '#00ffff';
-            propBgColor.value = '#000000';
-            propBorderColor.value = '#00ffff';
-            propBorderWidth.value = '2';
-            propRadius.value = '6';
-
-            // Clear 3D properties
+            propX.value = '0';
+            propY.value = '0';
+            propZ.value = '0';
             propRotateX.value = '0';
             propRotateY.value = '0';
             propRotateZ.value = '0';
-            propTranslateZ.value = '0';
-            propScaleX.value = '1';
-            propScaleY.value = '1';
-            propSkewX.value = '0';
-            propSkewY.value = '0';
-            propPerspective.value = '1000';
-
-            // Clear filters
-            filterBrightness.value = '100';
-            filterContrast.value = '100';
-            filterSaturate.value = '100';
-            filterBlur.value = '0';
-            filterHue.value = '0';
-
-            // Hide all text groups
-            const textGroups = [
-                'text-content-group', 'text-font-size-group', 'text-color-group',
-                'text-bg-group', 'text-border-group', 'text-border-width-group', 'text-radius-group'
-            ];
-            textGroups.forEach(groupId => {
-                document.getElementById(groupId).style.display = 'none';
-            });
+            propScale.value = '1';
+            propText.value = '';
+            
+            document.getElementById('text-content-group').style.display = 'none';
+            document.getElementById('text-size-group').style.display = 'none';
             document.getElementById('color-group').style.display = 'none';
+            document.getElementById('bg-color-group').style.display = 'none';
+            document.getElementById('border-group').style.display = 'none';
+            document.getElementById('border-width-group').style.display = 'none';
         }
 
-        // === 3D PRESET FUNCTIONS ===
+        function applyPropertiesToElement() {
+            if (!selected) return;
+
+            selected.position.x = parseFloat(propX.value);
+            selected.position.y = parseFloat(propY.value);
+            selected.position.z = parseFloat(propZ.value);
+            selected.rotation.x = THREE.MathUtils.degToRad(parseFloat(propRotateX.value));
+            selected.rotation.y = THREE.MathUtils.degToRad(parseFloat(propRotateY.value));
+            selected.rotation.z = THREE.MathUtils.degToRad(parseFloat(propRotateZ.value));
+            
+            const scale = parseFloat(propScale.value);
+            selected.scale.set(scale, scale, scale);
+
+            // Update element name
+            if (propName.value !== selected.userData.id) {
+                selected.userData.id = propName.value;
+                renderLayers();
+            }
+
+            // Update text properties
+            if (selected.userData.type === 'text') {
+                updateTextTexture();
+            }
+        }
+
+        function updateTextTexture() {
+            if (!selected || selected.userData.type !== 'text') return;
+
+            const opt = selected.userData.options;
+            const text = propText.value;
+            opt.size = parseInt(propTextSize.value);
+            opt.color = propColor.value;
+            opt.bg = propBgColor.value;
+            opt.border = propBorderColor.value;
+            opt.borderWidth = parseInt(propBorderWidth.value);
+
+            const texture = createTextTexture(text, opt);
+            selected.material.map = texture;
+            selected.material.needsUpdate = true;
+            selected.userData.text = text;
+        }
+
+        // === 3D PRESETS ===
         function apply3DPreset(preset) {
-            if (!selectedElement) return;
+            if (!selected) return;
 
             switch(preset) {
                 case 'flip':
                     propRotateY.value = '180';
-                    propTranslateZ.value = '50';
+                    propZ.value = '0.5';
                     break;
                 case 'cube':
-                    selectedElement.classList.add('spin-3d');
-                    setTimeout(() => selectedElement.classList.remove('spin-3d'), 6000);
+                    // Add spinning animation
+                    animateObject(selected, 'spin');
                     return;
                 case 'float':
-                    selectedElement.classList.add('float-3d');
-                    setTimeout(() => selectedElement.classList.remove('float-3d'), 4000);
+                    // Add floating animation
+                    animateObject(selected, 'float');
                     return;
                 case 'reset':
                     propRotateX.value = '0';
                     propRotateY.value = '0';
                     propRotateZ.value = '0';
-                    propTranslateZ.value = '0';
-                    propScaleX.value = '1';
-                    propScaleY.value = '1';
-                    propSkewX.value = '0';
-                    propSkewY.value = '0';
-                    selectedElement.classList.remove('spin-3d', 'float-3d');
+                    propZ.value = '0';
+                    propScale.value = '1';
                     break;
             }
             applyPropertiesToElement();
             saveState();
         }
 
-        // === UTILITY FUNCTIONS ===
-        function getRotation(el) {
-            const st = window.getComputedStyle(el);
-            const tr = st.getPropertyValue("transform");
-            if (tr === "none") return 0;
-            const values = tr.split('(')[1].split(')')[0].split(',');
-            const a = values[0];
-            const b = values[1];
-            let angle = Math.round(Math.atan2(b, a) * (180/Math.PI));
-            if (angle < 0) angle += 360;
-            return angle;
-        }
+        function animateObject(obj, type) {
+            const startTime = Date.now();
+            const duration = type === 'spin' ? 6000 : 4000;
 
-        function getTransformValue(transformString, property, defaultValue) {
-            const regex = new RegExp(`${property}\$$([^)]+)\$$`);
-            const match = transformString.match(regex);
-            if (!match) return defaultValue;
-            let value = match[1];
-            if (value.endsWith('deg')) value = parseFloat(value);
-            else if (value.endsWith('px')) value = parseFloat(value);
-            else value = parseFloat(value);
-            return value || defaultValue;
-        }
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
 
-        function getFilterValue(filterString, filterName, defaultValue) {
-            const regex = new RegExp(`${filterName}\$$([^)]+)\$$`);
-            const match = filterString.match(regex);
-            if (!match) return defaultValue;
-            let val = match[1];
-            if (val.endsWith('%')) val = val.slice(0, -1) / 100;
-            else if (val.endsWith('px')) val = parseFloat(val);
-            else if (val.endsWith('deg')) val = parseFloat(val);
-            else val = parseFloat(val);
-            return val;
-        }
-
-        function rgbToHex(rgb) {
-            if (rgb.startsWith('#')) return rgb;
-            const result = rgb.match(/\d+/g);
-            if (!result) return '#00ffff';
-            return '#' + result.map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+                if (progress < 1) {
+                    if (type === 'spin') {
+                        obj.rotation.x = progress * Math.PI * 4;
+                        obj.rotation.y = progress * Math.PI * 4;
+                        obj.rotation.z = progress * Math.PI * 4;
+                    } else if (type === 'float') {
+                        obj.position.z = Math.sin(progress * Math.PI * 4) * 0.5;
+                        obj.rotation.y = progress * Math.PI * 2;
+                    }
+                    requestAnimationFrame(animate);
+                } else {
+                    // Reset to original state
+                    if (type === 'spin') {
+                        obj.rotation.set(0, 0, 0);
+                    } else if (type === 'float') {
+                        obj.position.z = 0;
+                        obj.rotation.y = 0;
+                    }
+                    updateProperties();
+                }
+            }
+            animate();
         }
 
         // === LAYERS MANAGEMENT ===
-        function addLayer(el) {
-            layers.push(el);
-            renderLayers();
-            saveState();
-        }
-
-        function removeLayer(el) {
-            layers = layers.filter(l => l !== el);
-            renderLayers();
-        }
-
         function renderLayers() {
             layersContent.innerHTML = '';
-            [...layers].reverse().forEach((el, i) => {
+            [...objects].reverse().forEach((obj, i) => {
                 const layerItem = document.createElement('div');
                 layerItem.className = 'layer-item';
                 layerItem.innerHTML = `
                     <svg class="layer-icon" viewBox="0 0 24 24">
-                        ${getLayerIcon(el.dataset.type)}
+                        ${getLayerIcon(obj.userData.type)}
                     </svg>
-                    ${el.id}
+                    ${obj.userData.id}
                 `;
-                if (el === selectedElement) {
+                if (obj === selected) {
                     layerItem.classList.add('selected');
                 }
-                layerItem.addEventListener('click', () => selectElement(el));
+                layerItem.addEventListener('click', () => selectElement(obj));
                 layersContent.appendChild(layerItem);
-            });
-
-            // Update z-index
-            layers.forEach((el, idx) => {
-                el.style.zIndex = idx + 10;
             });
         }
 
@@ -1664,70 +1312,33 @@
                 case 'rectangle': return '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>';
                 case 'cube': return '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>';
                 case 'image': return '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5"/><path d="M21 15l-5-5-5 5"/>';
-                case 'video': return '<path d="M17 10.5V7c0-1.104-.896-2-2-2H5c-1.104 0-2 .896-2 2v10c0 1.104.896 2 2 2h10c1.104 0 2-.896 2-2v-3.5l4 4v-11l-4 4z"/>';
                 default: return '<circle cx="12" cy="12" r="6"/>';
             }
         }
 
-        function updateLayersSelection(el) {
+        function updateLayersSelection() {
             const layerItems = layersContent.querySelectorAll('.layer-item');
             layerItems.forEach(item => item.classList.remove('selected'));
-            if (!el) return;
-            const idx = layers.findIndex(l => l === el);
+            
+            if (!selected) return;
+            
+            const idx = objects.findIndex(obj => obj === selected);
             if (idx === -1) return;
-            const reverseIdx = layers.length - 1 - idx;
+            
+            const reverseIdx = objects.length - 1 - idx;
             if (layerItems[reverseIdx]) {
                 layerItems[reverseIdx].classList.add('selected');
             }
         }
 
-        // === ZOOM CONTROLS ===
-        function setZoom(level) {
-            currentZoom = Math.max(0.1, Math.min(3, level));
-            canvas.style.transform = `scale(${currentZoom})`;
-            zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
-        }
-
-        function zoomIn() {
-            setZoom(currentZoom + 0.1);
-        }
-
-        function zoomOut() {
-            setZoom(currentZoom - 0.1);
-        }
-
-        function zoomReset() {
-            setZoom(1);
-        }
-
-        // === ENHANCED EXPORT FUNCTIONS ===
-        async function exportSnapshot() {
+        // === EXPORT FUNCTIONS ===
+        function exportToPNG() {
             showLoading();
             try {
-                const rect = canvas.getBoundingClientRect();
-                const width = canvas.clientWidth;
-                const height = canvas.clientHeight;
-
-                const offscreen = document.createElement('canvas');
-                offscreen.width = width;
-                offscreen.height = height;
-                const ctx = offscreen.getContext('2d');
-
-                // Background
-                ctx.fillStyle = '#14141a';
-                ctx.fillRect(0, 0, width, height);
-
-                // Draw elements in layer order
-                for (let el of layers) {
-                    await drawElementToCanvas(ctx, el);
-                }
-
-                const dataURL = offscreen.toDataURL('image/png');
                 const link = document.createElement('a');
                 link.download = 'editIQ-3d-export.png';
-                link.href = dataURL;
+                link.href = renderer.domElement.toDataURL('image/png');
                 link.click();
-
                 showNotification('PNG exported successfully!', 'success');
             } catch (error) {
                 showNotification('Export failed: ' + error.message, 'error');
@@ -1736,179 +1347,69 @@
             }
         }
 
-        async function drawElementToCanvas(ctx, el) {
-            const x = parseInt(el.style.left) || 0;
-            const y = parseInt(el.style.top) || 0;
-            const w = el.offsetWidth;
-            const h = el.offsetHeight;
-            const rotation = getRotation(el) * Math.PI / 180;
-            const opacity = parseFloat(el.style.opacity || 1);
-
-            ctx.save();
-            ctx.globalAlpha = opacity;
-
-            // Transform
-            ctx.translate(x + w/2, y + h/2);
-            ctx.rotate(rotation);
-            ctx.translate(-w/2, -h/2);
-
-            // Apply filters (simplified)
-            const filterStr = el.style.filter || '';
-            if (filterStr.includes('brightness')) {
-                const brightness = getFilterValue(filterStr, 'brightness', 1);
-                ctx.filter = `brightness(${brightness})`;
-            }
-
-            // Draw by type
-            switch(el.dataset.type) {
-                case 'text':
-                    const fontSize = el.userData?.options?.size || 24;
-                    const textColor = el.userData?.options?.color || '#00ffff';
-                    const bgColor = el.userData?.options?.bg || 'rgba(0, 0, 0, 0.3)';
-                    const borderColor = el.userData?.options?.border || '#00ffff';
-                    const borderWidth = el.userData?.options?.borderWidth || 2;
-                    const radius = el.userData?.options?.radius || 6;
-
-                    // Draw background
-                    ctx.fillStyle = bgColor;
-                    ctx.fillRect(0, 0, w, h);
-
-                    // Draw border
-                    if (borderWidth > 0) {
-                        ctx.strokeStyle = borderColor;
-                        ctx.lineWidth = borderWidth;
-                        ctx.strokeRect(0, 0, w, h);
-                    }
-
-                    // Draw text
-                    ctx.fillStyle = textColor;
-                    ctx.font = `700 ${fontSize}px Orbitron, sans-serif`;
-                    ctx.textBaseline = 'middle';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(el.textContent, w/2, h/2);
-                    break;
-
-                case 'shape':
-                    ctx.fillStyle = getComputedStyle(el).backgroundColor;
-                    ctx.beginPath();
-                    ctx.ellipse(w/2, h/2, w/2, h/2, 0, 0, 2*Math.PI);
-                    ctx.fill();
-                    break;
-
-                case 'rectangle':
-                case 'cube':
-                    ctx.fillStyle = getComputedStyle(el).backgroundColor;
-                    ctx.fillRect(0, 0, w, h);
-                    break;
-
-                case 'image':
-                    const img = el.querySelector('img');
-                    if (img && img.complete) {
-                        ctx.drawImage(img, 0, 0, w, h);
-                    }
-                    break;
-
-                case 'video':
-                    const video = el.querySelector('video');
-                    if (video && video.readyState >= 2) {
-                        try {
-                            ctx.drawImage(video, 0, 0, w, h);
-                        } catch(e) {
-                            // Video not ready
-                        }
-                    }
-                    break;
-            }
-
-            ctx.restore();
-        }
-
         // === EVENT LISTENERS ===
+        
         // Tool buttons
         addTextBtn.addEventListener('click', () => {
-            const el = createElement('text');
-            canvas.appendChild(el);
-            selectElement(el);
-            addLayer(el);
+            const mesh = createTextMesh('Edit Me');
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
         });
 
         addShapeBtn.addEventListener('click', () => {
-            const el = createElement('shape');
-            canvas.appendChild(el);
-            selectElement(el);
-            addLayer(el);
+            const mesh = createShapeMesh();
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
         });
 
         addRectangleBtn.addEventListener('click', () => {
-            const el = createElement('rectangle');
-            canvas.appendChild(el);
-            selectElement(el);
-            addLayer(el);
+            const mesh = createRectangleMesh();
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
         });
 
         addCubeBtn.addEventListener('click', () => {
-            const el = createElement('cube');
-            canvas.appendChild(el);
-            selectElement(el);
-            addLayer(el);
+            const mesh = createCubeMesh();
+            scene.add(mesh);
+            objects.push(mesh);
+            selectElement(mesh);
+            renderLayers();
+            saveState();
         });
 
         addImageBtn.addEventListener('click', () => {
             fileImageInput.click();
         });
 
-        addVideoBtn.addEventListener('click', () => {
-            fileVideoInput.click();
-        });
-
         fileImageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const url = URL.createObjectURL(file);
-            const el = createElement('image', '', url);
-            canvas.appendChild(el);
-            selectElement(el);
-            addLayer(el);
+            handleImageUpload(file);
             fileImageInput.value = '';
         });
 
-        fileVideoInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const url = URL.createObjectURL(file);
-            const el = createElement('video', '', url);
-            canvas.appendChild(el);
-            selectElement(el);
-            addLayer(el);
-            fileVideoInput.value = '';
-        });
-
-        // Property controls with enhanced text support
-        [propName, propX, propY, propWidth, propHeight, propText, propRotation, propOpacity, propColor,
-         propFontSize, propTextColor, propBgColor, propBorderColor, propBorderWidth, propRadius,
-         propRotateX, propRotateY, propRotateZ, propTranslateZ, propPerspective, propScaleX, propScaleY, 
-         propSkewX, propSkewY, filterBrightness, filterContrast, filterSaturate, filterBlur, filterHue
-        ].forEach(input => {
-            input.addEventListener('input', applyPropertiesToElement);
+        // Property controls
+        [propName, propX, propY, propZ, propRotateX, propRotateY, propRotateZ, propScale, 
+         propText, propTextSize, propColor, propBgColor, propBorderColor, propBorderWidth].forEach(input => {
+            if (input) {
+                input.addEventListener('input', applyPropertiesToElement);
+            }
         });
 
         // 3D Preset buttons
-        presetFlip.addEventListener('click', () => apply3DPreset('flip'));
-        presetCube.addEventListener('click', () => apply3DPreset('cube'));
-        presetFloat.addEventListener('click', () => apply3DPreset('float'));
-        presetReset.addEventListener('click', () => apply3DPreset('reset'));
-
-        // Canvas selection
-        canvas.addEventListener('click', (e) => {
-            if (e.target === canvas || e.target.classList.contains('canvas-inner')) {
-                if (selectedElement) {
-                    selectedElement.classList.remove('selected');
-                    selectedElement = null;
-                    clearProperties();
-                    updateLayersSelection(null);
-                }
-            }
-        });
+        document.getElementById('preset-flip').addEventListener('click', () => apply3DPreset('flip'));
+        document.getElementById('preset-cube').addEventListener('click', () => apply3DPreset('cube'));
+        document.getElementById('preset-float').addEventListener('click', () => apply3DPreset('float'));
+        document.getElementById('preset-reset').addEventListener('click', () => apply3DPreset('reset'));
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
@@ -1931,46 +1432,47 @@
                         showNotification('Auto-save enabled', 'success');
                         break;
                 }
-            } else if (e.key === 'Delete' && selectedElement) {
-                removeLayer(selectedElement);
-                selectedElement.remove();
-                selectedElement = null;
+            } else if (e.key === 'Delete' && selected) {
+                scene.remove(selected);
+                const index = objects.indexOf(selected);
+                if (index > -1) {
+                    objects.splice(index, 1);
+                }
+                selected = null;
                 clearProperties();
+                renderLayers();
                 saveState();
             }
         });
 
-        // Zoom controls
-        document.getElementById('zoom-in').addEventListener('click', zoomIn);
-        document.getElementById('zoom-out').addEventListener('click', zoomOut);
-        document.getElementById('zoom-reset').addEventListener('click', zoomReset);
-
         // Top bar buttons
         document.getElementById('btn-undo').addEventListener('click', undo);
         document.getElementById('btn-redo').addEventListener('click', redo);
-
+        
         document.getElementById('btn-new').addEventListener('click', () => {
             if (confirm('Create new project? This will clear the current canvas.')) {
-                canvas.innerHTML = '';
-                layers = [];
-                selectedElement = null;
+                objects.forEach(obj => scene.remove(obj));
+                objects.length = 0;
+                selected = null;
                 clearProperties();
                 renderLayers();
                 history = [];
                 historyIndex = -1;
+                saveState();
                 showNotification('New project created', 'success');
             }
         });
 
         document.getElementById('btn-save').addEventListener('click', () => {
             const projectData = {
-                elements: layers.map(el => ({
-                    id: el.id,
-                    type: el.dataset.type,
-                    style: el.style.cssText,
-                    content: el.textContent || '',
-                    src: el.querySelector('img')?.src || el.querySelector('video')?.src || '',
-                    userData: el.userData || {}
+                objects: objects.map(obj => ({
+                    id: obj.userData.id,
+                    type: obj.userData.type,
+                    position: obj.position.toArray(),
+                    rotation: obj.rotation.toArray(),
+                    scale: obj.scale.toArray(),
+                    text: obj.userData.text || '',
+                    options: obj.userData.options || {}
                 }))
             };
             const blob = new Blob([JSON.stringify(projectData, null, 2)], {type: 'application/json'});
@@ -1983,8 +1485,8 @@
             showNotification('Project saved successfully!', 'success');
         });
 
-        document.getElementById('btn-export-png').addEventListener('click', exportSnapshot);
-
+        document.getElementById('btn-export-png').addEventListener('click', exportToPNG);
+        
         document.getElementById('btn-export-mp4').addEventListener('click', () => {
             showNotification('MP4 export coming soon!', 'warning');
         });
@@ -1998,10 +1500,22 @@
             showNotification(`Theme changed to ${e.target.value}`, 'success');
         });
 
-        // Initialize
-        setZoom(1);
-        saveState(); // Initial state
-        showNotification('editIQ 2.0 — 3D Enhanced loaded successfully!', 'success');
+        // Zoom controls (camera controls)
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            camera.position.z = Math.max(0.5, camera.position.z - 0.2);
+            zoomLevel.textContent = Math.round((3 / camera.position.z) * 100) + '%';
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            camera.position.z = Math.min(10, camera.position.z + 0.2);
+            zoomLevel.textContent = Math.round((3 / camera.position.z) * 100) + '%';
+        });
+
+        document.getElementById('zoom-reset').addEventListener('click', () => {
+            camera.position.z = 3;
+            zoomLevel.textContent = '100%';
+        });
     </script>
 </body>
 </html>
+
