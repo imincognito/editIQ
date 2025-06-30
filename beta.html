@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>3D Image Editor with WebGL Export</title>
+  <meta charset="UTF-8">
+  <title>3D Image Editor with Text Styling</title>
   <style>
     body {
       margin: 0;
@@ -19,7 +19,6 @@
     }
 
     canvas {
-      display: block;
       border: 2px dashed #444;
       margin: 20px 0;
     }
@@ -29,17 +28,18 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
+      margin-bottom: 10px;
     }
 
     label {
       display: flex;
       flex-direction: column;
-      align-items: center;
       font-size: 13px;
       color: #ccc;
+      align-items: center;
     }
 
-    input[type="range"] {
+    input[type="range"], input[type="color"], input[type="text"], input[type="number"] {
       width: 100px;
     }
 
@@ -68,7 +68,7 @@
   </style>
 </head>
 <body>
-  <h1>🖼️ 3D Image Editor (WebGL Snapshot)</h1>
+  <h1>🖼️ 3D Image Editor + Styled Text</h1>
 
   <label class="upload-btn">
     Upload Image
@@ -76,36 +76,48 @@
   </label>
 
   <div class="controls">
-    <label>Rotate X
-      <input type="range" id="rotateX" min="-180" max="180" value="0">
-    </label>
-    <label>Rotate Y
-      <input type="range" id="rotateY" min="-180" max="180" value="0">
-    </label>
-    <label>Rotate Z
-      <input type="range" id="rotateZ" min="-180" max="180" value="0">
-    </label>
-    <label>Scale
-      <input type="range" id="scale" min="0.1" max="2" step="0.01" value="1">
-    </label>
-    <label>Flip
-      <input type="checkbox" id="flip">
-    </label>
+    <label>Rotate X<input type="range" id="rotateX" min="-180" max="180" value="0"></label>
+    <label>Rotate Y<input type="range" id="rotateY" min="-180" max="180" value="0"></label>
+    <label>Rotate Z<input type="range" id="rotateZ" min="-180" max="180" value="0"></label>
+    <label>Scale<input type="range" id="scale" min="0.1" max="2" step="0.01" value="1"></label>
+    <label>Flip<input type="checkbox" id="flip"></label>
   </div>
 
   <canvas id="glcanvas" width="640" height="360"></canvas>
+
+  <h3 style="margin-bottom: 4px;">🅰️ Text Styling</h3>
+  <div class="controls">
+    <label>Text
+      <input type="text" id="text-input" value="Hello 3D!">
+    </label>
+    <label>Font Size
+      <input type="number" id="text-size" min="10" max="100" value="32">
+    </label>
+    <label>Text Color
+      <input type="color" id="text-color" value="#ffffff">
+    </label>
+    <label>BG Color
+      <input type="color" id="bg-color" value="#000000">
+    </label>
+    <label>Border Color
+      <input type="color" id="border-color" value="#ff0000">
+    </label>
+    <label>Border Width
+      <input type="number" id="border-width" min="0" max="10" value="2">
+    </label>
+    <label>Radius
+      <input type="range" id="border-radius" min="0" max="30" value="5">
+    </label>
+  </div>
 
   <div class="buttons">
     <button id="snapshot">Export PNG</button>
     <button id="reset">Reset</button>
   </div>
 
-  <!-- Three.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-
   <script>
-    let scene, camera, renderer, mesh, texture;
-    let imagePlane;
+    let scene, camera, renderer, mesh, texture, textSprite;
     const canvas = document.getElementById('glcanvas');
 
     const rotateX = document.getElementById('rotateX');
@@ -113,6 +125,69 @@
     const rotateZ = document.getElementById('rotateZ');
     const scale = document.getElementById('scale');
     const flip = document.getElementById('flip');
+
+    function createTextSprite(text, options) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = options.bgColor;
+      ctx.strokeStyle = options.borderColor;
+      ctx.lineWidth = options.borderWidth;
+      ctx.font = `${options.size}px Arial`;
+      const textWidth = ctx.measureText(text).width;
+
+      // Rounded rectangle
+      const radius = options.radius;
+      const rectWidth = textWidth + 40;
+      const rectHeight = options.size + 30;
+      const x = (canvas.width - rectWidth) / 2;
+      const y = (canvas.height - rectHeight) / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + rectWidth - radius, y);
+      ctx.quadraticCurveTo(x + rectWidth, y, x + rectWidth, y + radius);
+      ctx.lineTo(x + rectWidth, y + rectHeight - radius);
+      ctx.quadraticCurveTo(x + rectWidth, y + rectHeight, x + rectWidth - radius, y + rectHeight);
+      ctx.lineTo(x + radius, y + rectHeight);
+      ctx.quadraticCurveTo(x, y + rectHeight, x, y + rectHeight - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+      if (options.borderWidth > 0) ctx.stroke();
+
+      ctx.fillStyle = options.color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+      const texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+
+      const material = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(1.6, 0.8, 1);
+      return sprite;
+    }
+
+    function updateText() {
+      if (textSprite) scene.remove(textSprite);
+      const options = {
+        color: textColor.value,
+        bgColor: bgColor.value,
+        borderColor: borderColor.value,
+        borderWidth: parseInt(borderWidth.value),
+        radius: parseInt(borderRadius.value),
+        size: parseInt(textSize.value)
+      };
+      const text = textInput.value;
+      textSprite = createTextSprite(text, options);
+      textSprite.position.set(0, -0.6, 0);
+      scene.add(textSprite);
+    }
 
     function initScene() {
       scene = new THREE.Scene();
@@ -125,10 +200,10 @@
       const geometry = new THREE.PlaneGeometry(1.6, 0.9); // 16:9
       const defaultTexture = new THREE.TextureLoader().load('');
       const material = new THREE.MeshBasicMaterial({ map: defaultTexture });
-
       mesh = new THREE.Mesh(geometry, material);
       scene.add(mesh);
 
+      updateText();
       animate();
     }
 
@@ -165,7 +240,7 @@
 
     document.getElementById('snapshot').addEventListener('click', () => {
       const link = document.createElement('a');
-      link.download = '3d-image.png';
+      link.download = 'styled-3d-image.png';
       link.href = canvas.toDataURL();
       link.click();
     });
@@ -176,7 +251,20 @@
       rotateZ.value = 0;
       scale.value = 1;
       flip.checked = false;
+      textInput.value = "Hello 3D!";
+      updateText();
     });
+
+    const textInput = document.getElementById('text-input');
+    const textSize = document.getElementById('text-size');
+    const textColor = document.getElementById('text-color');
+    const bgColor = document.getElementById('bg-color');
+    const borderColor = document.getElementById('border-color');
+    const borderWidth = document.getElementById('border-width');
+    const borderRadius = document.getElementById('border-radius');
+
+    [textInput, textSize, textColor, bgColor, borderColor, borderWidth, borderRadius]
+      .forEach(el => el.addEventListener('input', updateText));
 
     initScene();
   </script>
