@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Futuristic Video Editor (Full Export)</title>
+  <title>Futuristic Video Editor (Export Ready)</title>
   <style>
     body {
       margin: 0;
@@ -68,7 +68,7 @@
 </head>
 <body>
 
-  <h1>🎥 Futuristic Video Editor (Full Export + Trimming + 2D/3D)</h1>
+  <h1>🎥 Futuristic Video Editor (WebM + MP4 Export)</h1>
 
   <input type="file" id="upload-video" accept="video/*">
 
@@ -93,7 +93,7 @@
   </div>
 
   <div id="canvas-container">
-    <video id="video-element" muted autoplay loop></video>
+    <video id="video-element" muted autoplay playsinline loop></video>
   </div>
 
   <!-- External Libraries -->
@@ -145,12 +145,16 @@
       input.addEventListener('input', updateStyles);
     });
 
-    upload.addEventListener('change', e => {
+    upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
         const url = URL.createObjectURL(file);
         video.src = url;
-        video.play();
+        video.onloadeddata = () => {
+          video.play().catch(err => {
+            console.warn('Autoplay failed:', err);
+          });
+        };
       }
     });
 
