@@ -1,271 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Image Editor with 3D Transform</title>
+  <meta charset="UTF-8" />
+  <title>3D Image Editor with WebGL Export</title>
   <style>
     body {
       margin: 0;
       background: #111;
-      color: #fff;
       font-family: Arial, sans-serif;
+      color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
     }
 
     h1 {
-      margin-bottom: 10px;
-      font-size: 24px;
+      margin-top: 20px;
     }
 
-    .editor-controls {
+    canvas {
+      display: block;
+      border: 2px dashed #444;
+      margin: 20px 0;
+    }
+
+    .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin: 10px 0;
       justify-content: center;
     }
 
     label {
       display: flex;
       flex-direction: column;
+      align-items: center;
       font-size: 13px;
       color: #ccc;
-      align-items: center;
     }
 
     input[type="range"] {
       width: 100px;
     }
 
-    .canvas-wrapper {
-      position: relative;
-      width: 640px;
-      height: 360px;
-      margin: 10px 0;
-      background: #222;
-      overflow: hidden;
-      border: 2px dashed #444;
-      perspective: 1000px;
-      cursor: grab;
-    }
-
-    .canvas-wrapper.dragging {
-      cursor: grabbing;
-    }
-
-    #editor-img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: center center;
-      will-change: transform, filter;
-    }
-
-    .action-buttons {
+    .buttons {
+      margin-top: 10px;
       display: flex;
       gap: 10px;
-      margin-top: 10px;
     }
 
-    button {
+    button, label.upload-btn {
       background: #333;
-      color: #fff;
-      border: none;
       padding: 8px 14px;
-      font-size: 14px;
       border-radius: 5px;
+      color: white;
+      border: none;
       cursor: pointer;
     }
 
-    button:hover {
+    button:hover, label.upload-btn:hover {
       background: #555;
     }
 
     input[type="file"] {
       display: none;
     }
-
-    label.upload-btn {
-      background: #333;
-      padding: 8px 14px;
-      border-radius: 5px;
-      cursor: pointer;
-      color: #fff;
-    }
-
-    label.upload-btn:hover {
-      background: #555;
-    }
   </style>
 </head>
 <body>
-  <h1>🖼️ Image Editor with 3D Transforms</h1>
+  <h1>🖼️ 3D Image Editor (WebGL Snapshot)</h1>
 
   <label class="upload-btn">
     Upload Image
-    <input type="file" accept="image/*" id="upload-input">
+    <input type="file" id="upload" accept="image/*" />
   </label>
 
-  <div class="editor-controls">
-    <label>Brightness
-      <input type="range" id="brightness" min="0" max="2" step="0.01" value="1">
+  <div class="controls">
+    <label>Rotate X
+      <input type="range" id="rotateX" min="-180" max="180" value="0">
     </label>
-    <label>Contrast
-      <input type="range" id="contrast" min="0" max="2" step="0.01" value="1">
+    <label>Rotate Y
+      <input type="range" id="rotateY" min="-180" max="180" value="0">
     </label>
-    <label>Saturation
-      <input type="range" id="saturate" min="0" max="3" step="0.01" value="1">
+    <label>Rotate Z
+      <input type="range" id="rotateZ" min="-180" max="180" value="0">
     </label>
     <label>Scale
-      <input type="range" id="scale" min="0.2" max="2" step="0.01" value="1">
+      <input type="range" id="scale" min="0.1" max="2" step="0.01" value="1">
     </label>
     <label>Flip
       <input type="checkbox" id="flip">
     </label>
-    <label>Rotate X
-      <input type="range" id="rotateX" min="-180" max="180" step="1" value="0">
-    </label>
-    <label>Rotate Y
-      <input type="range" id="rotateY" min="-180" max="180" step="1" value="0">
-    </label>
-    <label>Rotate Z
-      <input type="range" id="rotateZ" min="-180" max="180" step="1" value="0">
-    </label>
   </div>
 
-  <div class="canvas-wrapper" id="canvas-wrapper">
-    <img id="editor-img" src="" alt="">
+  <canvas id="glcanvas" width="640" height="360"></canvas>
+
+  <div class="buttons">
+    <button id="snapshot">Export PNG</button>
+    <button id="reset">Reset</button>
   </div>
 
-  <div class="action-buttons">
-    <button id="export-btn">Export PNG</button>
-    <button id="reset-btn">Reset</button>
-  </div>
+  <!-- Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
   <script>
-    const uploadInput = document.getElementById('upload-input');
-    const editorImg = document.getElementById('editor-img');
-    const canvasWrapper = document.getElementById('canvas-wrapper');
+    let scene, camera, renderer, mesh, texture;
+    let imagePlane;
+    const canvas = document.getElementById('glcanvas');
 
-    const brightness = document.getElementById('brightness');
-    const contrast = document.getElementById('contrast');
-    const saturate = document.getElementById('saturate');
-    const scale = document.getElementById('scale');
-    const flip = document.getElementById('flip');
     const rotateX = document.getElementById('rotateX');
     const rotateY = document.getElementById('rotateY');
     const rotateZ = document.getElementById('rotateZ');
+    const scale = document.getElementById('scale');
+    const flip = document.getElementById('flip');
 
-    const exportBtn = document.getElementById('export-btn');
-    const resetBtn = document.getElementById('reset-btn');
+    function initScene() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 1000);
+      camera.position.z = 2;
 
-    let offsetX = 0, offsetY = 0;
-    let isDragging = false;
-    let startX, startY;
+      renderer = new THREE.WebGLRenderer({ canvas, preserveDrawingBuffer: true, alpha: false });
+      renderer.setClearColor(0x222222);
 
-    uploadInput.addEventListener('change', (e) => {
+      const geometry = new THREE.PlaneGeometry(1.6, 0.9); // 16:9
+      const defaultTexture = new THREE.TextureLoader().load('');
+      const material = new THREE.MeshBasicMaterial({ map: defaultTexture });
+
+      mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      updateTransforms();
+      renderer.render(scene, camera);
+    }
+
+    function updateTransforms() {
+      mesh.rotation.x = THREE.MathUtils.degToRad(rotateX.value);
+      mesh.rotation.y = THREE.MathUtils.degToRad(rotateY.value);
+      mesh.rotation.z = THREE.MathUtils.degToRad(rotateZ.value);
+      const s = parseFloat(scale.value);
+      mesh.scale.set(flip.checked ? -s : s, s, 1);
+    }
+
+    document.getElementById('upload').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (event) => {
-        editorImg.src = event.target.result;
-        editorImg.style.top = '0px';
-        editorImg.style.left = '0px';
-        offsetX = offsetY = 0;
-        applyTransforms();
+        const img = new Image();
+        img.onload = () => {
+          texture = new THREE.Texture(img);
+          texture.needsUpdate = true;
+          mesh.material.map = texture;
+          mesh.material.needsUpdate = true;
+        };
+        img.src = event.target.result;
       };
       reader.readAsDataURL(file);
     });
 
-    function applyTransforms() {
-      const s = parseFloat(scale.value);
-      const f = flip.checked ? -1 : 1;
-      const rx = rotateX.value;
-      const ry = rotateY.value;
-      const rz = rotateZ.value;
-
-      editorImg.style.transform = `
-        translate(${offsetX}px, ${offsetY}px)
-        scale(${s * f}, ${s})
-        rotateX(${rx}deg)
-        rotateY(${ry}deg)
-        rotateZ(${rz}deg)
-      `;
-
-      editorImg.style.filter = `
-        brightness(${brightness.value})
-        contrast(${contrast.value})
-        saturate(${saturate.value})
-      `;
-    }
-
-    [brightness, contrast, saturate, scale, flip, rotateX, rotateY, rotateZ].forEach(input => {
-      input.addEventListener('input', applyTransforms);
-    });
-
-    canvasWrapper.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      startX = e.clientX - offsetX;
-      startY = e.clientY - offsetY;
-      canvasWrapper.classList.add('dragging');
-    });
-
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-      canvasWrapper.classList.remove('dragging');
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      offsetX = e.clientX - startX;
-      offsetY = e.clientY - startY;
-      applyTransforms();
-    });
-
-    exportBtn.addEventListener('click', () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const wrapperStyles = getComputedStyle(canvasWrapper);
-      canvas.width = parseInt(wrapperStyles.width);
-      canvas.height = parseInt(wrapperStyles.height);
-      ctx.fillStyle = '#222';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.filter = editorImg.style.filter;
-
-      const imgWidth = editorImg.naturalWidth * parseFloat(scale.value);
-      const imgHeight = editorImg.naturalHeight * parseFloat(scale.value);
-      const x = (canvas.width / 2) - (imgWidth / 2) + offsetX;
-      const y = (canvas.height / 2) - (imgHeight / 2) + offsetY;
-
-      ctx.save();
-      ctx.translate(canvas.width / 2 + offsetX, canvas.height / 2 + offsetY);
-      ctx.rotate((parseInt(rotateZ.value) * Math.PI) / 180);
-      ctx.scale(flip.checked ? -1 : 1, 1);
-      ctx.drawImage(editorImg, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight);
-      ctx.restore();
-
+    document.getElementById('snapshot').addEventListener('click', () => {
       const link = document.createElement('a');
-      link.download = 'edited-3d-image.png';
+      link.download = '3d-image.png';
       link.href = canvas.toDataURL();
       link.click();
     });
 
-    resetBtn.addEventListener('click', () => {
-      brightness.value = 1;
-      contrast.value = 1;
-      saturate.value = 1;
-      scale.value = 1;
-      flip.checked = false;
+    document.getElementById('reset').addEventListener('click', () => {
       rotateX.value = 0;
       rotateY.value = 0;
       rotateZ.value = 0;
-      offsetX = 0;
-      offsetY = 0;
-      applyTransforms();
+      scale.value = 1;
+      flip.checked = false;
     });
+
+    initScene();
   </script>
 </body>
 </html>
