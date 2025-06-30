@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>editIQ · 3D WebGL Editor</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      user-select: none;
+    }
+
+    h1 {
+      margin: 20px 0 10px;
+      font-size: 20px;
+      letter-spacing: 1px;
+    }
+
+    canvas {
+      margin: 10px 0;
+      border: 2px dashed #333;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .toolbar button, .toolbar label {
+      background: #222;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .toolbar button:hover, .toolbar label:hover {
+      background: #333;
+    }
+
+    .toolbar input[type="file"] {
+      display: none;
+    }
+
+    .panel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 5px 0 20px;
+    }
+
+    .panel label {
+      font-size: 12px;
+      color: #bbb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .panel input[type="range"],
+    .panel input[type="color"],
+    .panel input[type="text"],
+    .panel input[type="number"] {
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <h1>editIQ · 3D WebGL Editor</h1>
+
+  <div class="toolbar">
+    <label>Add Image<input type="file" id="image-upload" accept="image/*"></label>
+    <button id="add-text">Add Text</button>
+    <button id="export">Export PNG</button>
+  </div>
+
+  <canvas id="glcanvas" width="800" height="450"></canvas>
+
+  <div id="control-panel" class="panel"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    let scene, camera, renderer, selected = null;
+    const objects = [];
+
+    init();
+    animate();
+
+    function init() {
+      const canvas = document.getElementById('glcanvas');
+      renderer = new THREE.WebGLRenderer({ canvas, preserveDrawingBuffer: true });
+      renderer.setClearColor(0x0d0d0d);
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 1000);
+      camera.position.z = 3;
+
+      canvas.addEventListener('mousedown', onCanvasClick);
+      document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+      document.getElementById('add-text').addEventListener('click', () => addText('Edit Me'));
+      document.getElementById('export').addEventListener('click', exportSnapshot);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    function onCanvasClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      const mouse = new THREE.Vector2(x, y);
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(objects);
+      if (intersects.length > 0) {
+        selected = intersects[0].object;
+        updateControls();
+      }
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const texture = new THREE.Texture(img);
+          texture.needsUpdate = true;
+          const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            alphaTest: 0.01
+          });
+          const aspect = img.width / img.height;
+          const height = 1;
+          const width = height * aspect;
+          const geometry = new THREE.PlaneGeometry(width, height);
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(0, 0, 0);
+          mesh.userData = { type: 'image' };
+          scene.add(mesh);
+          objects.push(mesh);
+          selected = mesh;
+          updateControls();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function createTextTexture(text, options) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = options.bg;
+      ctx.strokeStyle = options.border;
+      ctx.lineWidth = options.borderWidth;
+      const w = canvas.width, h = canvas.height, r = options.radius;
+      ctx.beginPath();
+      ctx.moveTo(r, 0); ctx.lineTo(w - r, 0);
+      ctx.quadraticCurveTo(w, 0, w, r);
+      ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h);
+      ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r);
+      ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.closePath(); ctx.fill(); if (options.borderWidth > 0) ctx.stroke();
+
+      ctx.fillStyle = options.color;
+      ctx.font = `${options.size}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      const texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function addText(text) {
+      const options = {
+        size: 32,
+        color: "#ffffff",
+        bg: "#000000",
+        border: "#ff0000",
+        borderWidth: 2,
+        radius: 10
+      };
+      const texture = createTextTexture(text, options);
+      const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+      const geometry = new THREE.PlaneGeometry(1.6, 0.8);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.userData.text = text;
+      mesh.userData.options = options;
+      mesh.position.set(0, 0, 0);
+      scene.add(mesh);
+      objects.push(mesh);
+      selected = mesh;
+      updateControls();
+    }
+
+    function updateControls() {
+      const panel = document.getElementById('control-panel');
+      panel.innerHTML = '';
+      if (!selected) return;
+
+      panel.innerHTML += `
+        <label>X<input type="range" id="posX" min="-3" max="3" step="0.01" value="${selected.position.x}"></label>
+        <label>Y<input type="range" id="posY" min="-3" max="3" step="0.01" value="${selected.position.y}"></label>
+        <label>Z<input type="range" id="posZ" min="-3" max="3" step="0.01" value="${selected.position.z}"></label>
+        <label>Rotate X<input type="range" id="rotX" min="-180" max="180" value="${THREE.MathUtils.radToDeg(selected.rotation.x)}"></label>
+        <label>Rotate Y<input type="range" id="rotY" min="-180" max="180" value="${THREE.MathUtils.radToDeg(selected.rotation.y)}"></label>
+        <label>Rotate Z<input type="range" id="rotZ" min="-180" max="180" value="${THREE.MathUtils.radToDeg(selected.rotation.z)}"></label>
+        <label>Scale<input type="range" id="scale" min="0.1" max="3" step="0.01" value="${selected.scale.x}"></label>
+      `;
+
+      if (selected.userData.text !== undefined) {
+        const opt = selected.userData.options;
+        panel.innerHTML += `
+          <label>Text<input type="text" id="textVal" value="${selected.userData.text}"></label>
+          <label>Font Size<input type="number" id="fontSize" value="${opt.size}" min="10" max="100"></label>
+          <label>Text Color<input type="color" id="textColor" value="${opt.color}"></label>
+          <label>BG Color<input type="color" id="bgColor" value="${opt.bg}"></label>
+          <label>Border<input type="color" id="borderColor" value="${opt.border}"></label>
+          <label>Border Width<input type="number" id="borderWidth" value="${opt.borderWidth}" min="0" max="10"></label>
+          <label>Radius<input type="range" id="radius" min="0" max="30" value="${opt.radius}"></label>
+        `;
+      }
+
+      addControlListeners();
+    }
+
+    function addControlListeners() {
+      ['posX', 'posY', 'posZ'].forEach(id => {
+        document.getElementById(id).addEventListener('input', e => {
+          selected.position[id.charAt(3).toLowerCase()] = parseFloat(e.target.value);
+        });
+      });
+
+      ['rotX', 'rotY', 'rotZ'].forEach(id => {
+        document.getElementById(id).addEventListener('input', e => {
+          selected.rotation[id.charAt(3).toLowerCase()] = THREE.MathUtils.degToRad(parseFloat(e.target.value));
+        });
+      });
+
+      document.getElementById('scale').addEventListener('input', e => {
+        const s = parseFloat(e.target.value);
+        selected.scale.set(s, s, s);
+      });
+
+      if (selected.userData.text !== undefined) {
+        ['textVal', 'fontSize', 'textColor', 'bgColor', 'borderColor', 'borderWidth', 'radius'].forEach(id => {
+          document.getElementById(id).addEventListener('input', updateTextTexture);
+        });
+      }
+    }
+
+    function updateTextTexture() {
+      const opt = selected.userData.options;
+      const text = document.getElementById('textVal').value;
+      opt.size = parseInt(document.getElementById('fontSize').value);
+      opt.color = document.getElementById('textColor').value;
+      opt.bg = document.getElementById('bgColor').value;
+      opt.border = document.getElementById('borderColor').value;
+      opt.borderWidth = parseInt(document.getElementById('borderWidth').value);
+      opt.radius = parseInt(document.getElementById('radius').value);
+      const texture = createTextTexture(text, opt);
+      selected.material.map = texture;
+      selected.material.needsUpdate = true;
+      selected.userData.text = text;
+    }
+
+    function exportSnapshot() {
+      const link = document.createElement('a');
+      link.download = 'editIQ-3d-export.png';
+      link.href = renderer.domElement.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
