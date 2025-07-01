@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Video Editor</title>
+  <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+  <style>
+    body { font-family: sans-serif; }
+    #editor {
+      width: 800px;
+      height: 450px;
+      border: 2px solid #ccc;
+      position: relative;
+      background: #eee;
+      overflow: hidden;
+    }
+    .element {
+      position: absolute;
+      touch-action: none;
+      transform-origin: center center;
+    }
+    video, .text-element {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .text-element {
+      font-size: 24px;
+      font-weight: bold;
+      color: red;
+      pointer-events: none;
+    }
+    #controls {
+      margin: 1em 0;
+    }
+    canvas {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<h2>🎬 Video Editor with Live Preview and Export</h2>
+
+<div id="controls">
+  <input type="file" id="upload" accept="video/*">
+  <button onclick="addText()">Add Text</button>
+  <button onclick="startExport()">Export</button>
+</div>
+
+<div id="editor"></div>
+<canvas id="renderCanvas" width="800" height="450"></canvas>
+
+<script>
+const editor = document.getElementById('editor');
+let videoWrapper, videoEl;
+
+document.getElementById('upload').onchange = function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+
+  // Container
+  videoWrapper = document.createElement('div');
+  videoWrapper.className = 'element';
+  videoWrapper.style.top = '50px';
+  videoWrapper.style.left = '50px';
+  videoWrapper.style.width = '320px';
+  videoWrapper.style.height = '180px';
+
+  // Video
+  videoEl = document.createElement('video');
+  videoEl.src = url;
+  videoEl.loop = true;
+  videoEl.muted = true;
+  videoEl.autoplay = true;
+  videoEl.playsInline = true;
+  videoEl.style.pointerEvents = 'none';
+
+  videoWrapper.appendChild(videoEl);
+  editor.appendChild(videoWrapper);
+
+  makeInteractable(videoWrapper);
+};
+
+function makeInteractable(el) {
+  interact(el)
+    .draggable({
+      listeners: {
+        move(event) {
+          const target = event.target;
+          const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+          const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+          updateTransform(target, x, y);
+        }
+      }
+    })
+    .resizable({
+      edges: { left: true, right: true, bottom: true, top: true },
+      listeners: {
+        move(event) {
+          const target = event.target;
+          target.style.width = `${event.rect.width}px`;
+          target.style.height = `${event.rect.height}px`;
+        }
+      }
+    })
+    .gesturable({
+      listeners: {
+        move(event) {
+          const target = event.target;
+          const current = parseFloat(target.dataset.angle || 0) + event.da;
+          target.dataset.angle = current;
+          const x = parseFloat(target.dataset.x) || 0;
+          const y = parseFloat(target.dataset.y) || 0;
+          updateTransform(target, x, y, current);
+        }
+      }
+    });
+}
+
+function updateTransform(el, x, y, angle = null) {
+  if (angle === null) angle = parseFloat(el.dataset.angle || 0);
+  el.style.transform = `translate(${x}px, ${y}px) rotate(${angle}deg)`;
+  el.dataset.x = x;
+  el.dataset.y = y;
+  el.dataset.angle = angle;
+}
+
+function addText() {
+  const el = document.createElement('div');
+  el.className = 'element text-element';
+  el.textContent = 'Your Text Here';
+  el.style.top = '150px';
+  el.style.left = '150px';
+  el.style.width = '200px';
+  el.style.height = '50px';
+  editor.appendChild(el);
+  makeInteractable(el);
+}
+
+// --- Export Video ---
+function startExport() {
+  const canvas = document.getElementById('renderCanvas');
+  const ctx = canvas.getContext('2d');
+  const stream = canvas.captureStream(30); // 30fps
+  const recorder = new MediaRecorder(stream);
+  const chunks = [];
+
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'exported-video.webm';
+    a.click();
+  };
+
+  recorder.start();
+
+  const duration = 5000; // Record for 5 seconds
+  const startTime = performance.now();
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    [...editor.children].forEach(el => {
+      const rect = el.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      const x = rect.left - editorRect.left;
+      const y = rect.top - editorRect.top;
+      const w = rect.width;
+      const h = rect.height;
+      const angle = parseFloat(el.dataset.angle || 0) * Math.PI / 180;
+
+      ctx.save();
+      ctx.translate(x + w/2, y + h/2);
+      ctx.rotate(angle);
+
+      if (el.querySelector('video')) {
+        const v = el.querySelector('video');
+        ctx.drawImage(v, -w/2, -h/2, w, h);
+      } else {
+        ctx.fillStyle = 'red';
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(el.textContent, 0, 8);
+      }
+
+      ctx.restore();
+    });
+
+    if (performance.now() - startTime < duration) {
+      requestAnimationFrame(draw);
+    } else {
+      recorder.stop();
+    }
+  }
+
+  draw();
+}
+</script>
+
+</body>
+</html>
