@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Futuristic 2D/3D Editor</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f0f0f;
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      overflow: hidden;
+    }
+
+    #editor {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      perspective: 1200px;
+      background: radial-gradient(#111, #000);
+      overflow: hidden;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      position: relative;
+    }
+
+    .element {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      cursor: move;
+      transform-style: preserve-3d;
+      user-select: none;
+    }
+
+    input[type="file"] {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 20;
+    }
+
+    #controls, #exportControls {
+      position: absolute;
+      z-index: 20;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    #controls {
+      top: 20px;
+      right: 20px;
+    }
+
+    #exportControls {
+      bottom: 20px;
+      right: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 5px;
+    }
+
+    input[type="range"] {
+      width: 120px;
+    }
+
+    button {
+      margin-top: 5px;
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #555;
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+<input type="file" id="fileInput" />
+
+<div id="controls">
+  <button onclick="addText()">Add Text</button>
+  <button onclick="addBox()">Add Box</button>
+
+  <label>X Rotate <input type="range" min="-180" max="180" value="0" id="rotateX"></label>
+  <label>Y Rotate <input type="range" min="-180" max="180" value="0" id="rotateY"></label>
+  <label>Z Rotate <input type="range" min="-180" max="180" value="0" id="rotateZ"></label>
+</div>
+
+<div id="exportControls">
+  <button onclick="exportImage()">Export Image</button>
+  <button onclick="exportVideo()">Export Video</button>
+</div>
+
+<div id="editor">
+  <div id="canvas"></div>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  let currentElement = null;
+  let uploadedType = null;
+
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    uploadedType = file.type.startsWith('video') ? 'video' : 'image';
+
+    const el = uploadedType === 'video' ? document.createElement('video') : document.createElement('img');
+    el.src = url;
+
+    if (uploadedType === 'video') {
+      el.controls = true;
+      el.loop = true;
+      el.muted = true;
+      el.autoplay = true;
+    }
+
+    el.classList.add('element');
+    el.style.transformStyle = 'preserve-3d';
+    el.draggable = true;
+    makeInteractive(el);
+    canvas.appendChild(el);
+
+    currentElement = el;
+    applyCurrentRotationToSliders();
+  });
+
+  function addText() {
+    const el = document.createElement('div');
+    el.className = 'element';
+    el.contentEditable = true;
+    el.innerText = 'Edit me';
+    makeInteractive(el);
+    canvas.appendChild(el);
+    currentElement = el;
+    applyCurrentRotationToSliders();
+  }
+
+  function addBox() {
+    const box = document.createElement('div');
+    box.className = 'element';
+    box.style.width = '100px';
+    box.style.height = '100px';
+    box.style.background = 'rgba(0,255,255,0.3)';
+    box.innerText = '3D Box';
+    makeInteractive(box);
+    canvas.appendChild(box);
+    currentElement = box;
+    applyCurrentRotationToSliders();
+  }
+
+  function makeInteractive(el) {
+    el.style.transformStyle = 'preserve-3d';
+
+    el.addEventListener('mousedown', (e) => {
+      currentElement = el;
+      applyCurrentRotationToSliders();
+
+      const offsetX = e.offsetX;
+      const offsetY = e.offsetY;
+
+      function move(e) {
+        el.style.left = `${e.pageX - offsetX}px`;
+        el.style.top = `${e.pageY - offsetY}px`;
+      }
+
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', () => {
+        document.removeEventListener('mousemove', move);
+      }, { once: true });
+    });
+
+    el.addEventListener('click', () => {
+      currentElement = el;
+      applyCurrentRotationToSliders();
+    });
+  }
+
+  function applyCurrentRotationToSliders() {
+    if (!currentElement) return;
+    const transform = currentElement.style.transform || '';
+    const match = transform.match(/rotateX\((-?\d+)deg\).*rotateY\((-?\d+)deg\).*rotateZ\((-?\d+)deg\)/);
+    if (match) {
+      document.getElementById('rotateX').value = match[1];
+      document.getElementById('rotateY').value = match[2];
+      document.getElementById('rotateZ').value = match[3];
+    } else {
+      document.getElementById('rotateX').value = 0;
+      document.getElementById('rotateY').value = 0;
+      document.getElementById('rotateZ').value = 0;
+    }
+  }
+
+  function updateRotation() {
+    if (!currentElement) return;
+    const rx = document.getElementById('rotateX').value;
+    const ry = document.getElementById('rotateY').value;
+    const rz = document.getElementById('rotateZ').value;
+    currentElement.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+  }
+
+  ['rotateX', 'rotateY', 'rotateZ'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateRotation);
+  });
+
+  function exportImage() {
+    html2canvas(canvas).then(canvasExport => {
+      const link = document.createElement('a');
+      link.download = 'exported_image.png';
+      link.href = canvasExport.toDataURL('image/png');
+      link.click();
+    });
+  }
+
+  function exportVideo() {
+    const fps = 30;
+    const duration = 5;
+
+    const stream = document.getElementById('editor').captureStream(fps);
+    const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+    const chunks = [];
+
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "exported_video.webm";
+      a.click();
+    };
+
+    recorder.start();
+    setTimeout(() => recorder.stop(), duration * 1000);
+  }
+</script>
+
+</body>
+</html>
