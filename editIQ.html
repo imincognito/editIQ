@@ -1,1841 +1,1009 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>editIQ 2.0 — Futuristic Web Editor</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
-
-    /* === THEMES === */
-    :root {
-      --bg-dark: #121214;
-      --primary-glow: #00f0ff;
-      --accent-color: #0ff;
-      --text-light: #eee;
-      --panel-bg: #1b1b23;
-      --shadow-glow: rgba(0, 255, 255, 0.25);
-      --font-family: 'Orbitron', sans-serif;
-    }
-    body.theme-purple {
-      --primary-glow: #ae00ff;
-      --accent-color: #c08cff;
-      --shadow-glow: rgba(174, 0, 255, 0.3);
-      --panel-bg: #2a1b3d;
-      --bg-dark: #1a122a;
-    }
-    body.theme-red {
-      --primary-glow: #ff0055;
-      --accent-color: #ff80a5;
-      --shadow-glow: rgba(255, 0, 85, 0.3);
-      --panel-bg: #3a1b22;
-      --bg-dark: #1a1214;
-    }
-
-    /* === BASE STYLES === */
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      height: 100vh;
-      font-family: var(--font-family);
-      background-color: var(--bg-dark);
-      color: var(--text-light);
-      display: grid;
-      grid-template-columns: 240px 1fr 320px;
-      grid-template-rows: 48px 1fr 120px;
-      grid-template-areas:
-        "topbar topbar topbar"
-        "sidebar canvas properties"
-        "layers layers layers";
-      overflow: hidden;
-      user-select: none;
-    }
-    button, input, select {
-      font-family: var(--font-family);
-    }
-    button {
-      cursor: pointer;
-    }
-
-    /* === TOPBAR === */
-    header {
-      grid-area: topbar;
-      background: var(--panel-bg);
-      border-bottom: 1px solid #222;
-      display: flex;
-      align-items: center;
-      padding: 0 20px;
-      gap: 1rem;
-      color: var(--primary-glow);
-      text-shadow: 0 0 8px var(--primary-glow);
-      font-weight: 600;
-      font-size: 1.2rem;
-    }
-    header .title {
-      flex-grow: 1;
-    }
-    header button {
-      background: none;
-      border: 1.5px solid var(--primary-glow);
-      color: var(--primary-glow);
-      padding: 6px 12px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      transition: background 0.3s ease;
-    }
-    header button:hover {
-      background: var(--primary-glow);
-      color: var(--bg-dark);
-      box-shadow: 0 0 10px var(--primary-glow);
-    }
-    header button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* === SIDEBAR TOOLS === */
-    aside.sidebar {
-      grid-area: sidebar;
-      background: var(--panel-bg);
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      border-right: 1px solid #222;
-      overflow-y: auto;
-    }
-    .tool-button {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      padding: 0.7rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      background: transparent;
-      border: 1.5px solid var(--primary-glow);
-      color: var(--accent-color);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      transition: background 0.3s ease;
-      user-select: none;
-    }
-    .tool-button:hover {
-      background: var(--primary-glow);
-      color: var(--bg-dark);
-      box-shadow: 0 0 8px var(--primary-glow);
-    }
-    .tool-button svg {
-      width: 18px;
-      height: 18px;
-      fill: var(--accent-color);
-      transition: fill 0.3s ease;
-      pointer-events: none;
-    }
-    .tool-button:hover svg {
-      fill: var(--bg-dark);
-    }
-
-    /* === CANVAS === */
-    main.canvas {
-      grid-area: canvas;
-      position: relative;
-      background: linear-gradient(135deg, #0a0a10 0%, #17171f 100%);
-      overflow: hidden;
-      border: 1px solid #222;
-      margin: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
-      transform-origin: top left;
-      perspective: 1000px;
-    }
-    .canvas-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-height: 600px;
-      background: #14141a;
-      border-radius: 8px;
-      cursor: default;
-      overflow: hidden;
-      transform-origin: 0 0;
-    }
-
-    /* === DRAGGABLE ELEMENTS === */
-    .draggable {
-      position: absolute;
-      user-select: none;
-      cursor: move;
-      border-radius: 6px;
-      box-shadow: 0 0 10px var(--primary-glow);
-      transition: box-shadow 0.3s ease;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-      background: transparent;
-      border: 2px solid transparent;
-      transform-style: preserve-3d;
-    }
-    .draggable.selected {
-      border-color: var(--primary-glow);
-      box-shadow: 0 0 14px 3px var(--primary-glow);
-      background: rgba(0, 255, 255, 0.1);
-    }
-    /* Text style */
-    .draggable.text {
-      color: var(--accent-color);
-      font-weight: 700;
-      font-size: 1.3rem;
-      padding: 6px 10px;
-      white-space: nowrap;
-      user-select: text;
-      cursor: text;
-      background: transparent;
-      border: 2px solid transparent;
-      text-shadow: 0 0 5px var(--primary-glow);
-    }
-
-    /* Image style */
-    .draggable.image img {
-      max-width: 100%;
-      max-height: 100%;
-      user-select: none;
-      pointer-events: none;
-      display: block;
-    }
-
-    /* Video style */
-    .draggable.video video {
-      max-width: 100%;
-      max-height: 100%;
-      user-select: none;
-      pointer-events: none;
-      display: block;
-    }
-
-    /* Shape style */
-    .draggable.shape {
-      background: var(--accent-color);
-      opacity: 0.7;
-      user-select: none;
-    }
-
-    /* === PROPERTIES PANEL === */
-    aside.properties {
-      grid-area: properties;
-      background: var(--panel-bg);
-      padding: 1rem;
-      border-left: 1px solid #222;
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      font-size: 0.9rem;
-      overflow-y: auto;
-    }
-    aside.properties h2 {
-      color: var(--primary-glow);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid #222;
-      padding-bottom: 0.5rem;
-      margin: 0 0 8px 0;
-      font-size: 0.95rem;
-    }
-    .property-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-      margin-bottom: 0.5rem;
-    }
-    .property-row {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .property-row button {
-      flex: 1;
-      background: none;
-      border: 1px solid var(--primary-glow);
-      color: var(--primary-glow);
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      transition: background 0.3s ease;
-    }
-    .property-row button:hover {
-      background: var(--primary-glow);
-      color: var(--bg-dark);
-    }
-    label {
-      color: var(--accent-color);
-      font-weight: 600;
-      font-size: 0.8rem;
-    }
-    input[type="text"],
-    input[type="number"],
-    input[type="color"],
-    select,
-    input[type="range"] {
-      background: #101018;
-      border: 1px solid #222;
-      border-radius: 5px;
-      color: var(--text-light);
-      padding: 4px 8px;
-      font-family: var(--font-family);
-      font-size: 0.8rem;
-    }
-    input[type="text"]:focus,
-    input[type="number"]:focus,
-    input[type="color"]:focus,
-    select:focus,
-    input[type="range"]:focus {
-      outline: none;
-      border-color: var(--primary-glow);
-      box-shadow: 0 0 6px var(--primary-glow);
-    }
-    input[type="range"] {
-      -webkit-appearance: none;
-      height: 4px;
-      border-radius: 2px;
-      background: #222;
-      cursor: pointer;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--primary-glow);
-      cursor: pointer;
-      box-shadow: 0 0 6px var(--primary-glow);
-      border: none;
-      margin-top: -4px;
-    }
-    input[type="color"] {
-      width: 40px;
-      height: 30px;
-      padding: 2px;
-      cursor: pointer;
-    }
-
-    /* === LAYERS PANEL === */
-    aside.layers {
-      grid-area: layers;
-      background: var(--panel-bg);
-      border-top: 1px solid #222;
-      padding: 0.5rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      overflow-x: auto;
-      color: var(--accent-color);
-      user-select: none;
-    }
-    .layer-item {
-      background: transparent;
-      border: 1.5px solid var(--primary-glow);
-      padding: 5px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      white-space: nowrap;
-      transition: background 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      user-select: none;
-    }
-    .layer-item.selected {
-      background: var(--primary-glow);
-      color: var(--bg-dark);
-      box-shadow: 0 0 10px var(--primary-glow);
-    }
-
-    /* === ZOOM CONTROLS === */
-    #zoom-controls {
-      margin-left: auto;
-      display: flex;
-      gap: 0.5rem;
-      justify-content: center;
-    }
-    #zoom-controls button {
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      font-size: 1.3rem;
-      line-height: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: none;
-      border: 1.5px solid var(--primary-glow);
-      color: var(--primary-glow);
-      transition: background 0.3s ease;
-    }
-    #zoom-controls button:hover {
-      background: var(--primary-glow);
-      color: var(--bg-dark);
-    }
-
-    /* Resizer styles */
-    .resizer {
-      pointer-events: auto;
-    }
-
-    /* Value display spans */
-    .value-display {
-      font-size: 0.7rem;
-      color: var(--accent-color);
-      margin-left: 0.5rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>maxEdit - 3D Content Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a modern, minimalist aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #E0E0E0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        #container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #canvas-border {
+            position: fixed;
+            box-sizing: border-box; /* Ensure border is inside */
+            border: 1px solid rgba(255, 255, 255, 0.15); /* Subtle border for the canvas */
+            border-radius: 8px; /* Slightly rounded corners for the frame */
+            pointer-events: none; /* Make sure it doesn't interfere with mouse events */
+        }
+        .ui-panel {
+            background-color: rgba(28, 28, 30, 0.85); /* Semi-transparent dark panel */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .control-group {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .control-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .input-field {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #FFF;
+            padding: 4px 8px;
+            width: 60px;
+            text-align: center;
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #A78BFA; /* A nice violet accent */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #1C1C1E;
+        }
+        .btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #A78BFA;
+        }
+        .btn.active {
+             background-color: #A78BFA;
+             color: #000;
+        }
+        /* Responsive icon sizing */
+        .icon-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .icon-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+        /* Custom scrollbar for inspector panel */
+        #inspector-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        #inspector-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #inspector-panel::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        #inspector-panel::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+    </style>
 </head>
-<body>
+<body class="bg-black">
 
-  <!-- TOP BAR -->
-  <header>
-    <div class="title">editIQ 2.0</div>
-    <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
-    <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
-    <button id="btn-delete" title="Delete Selected (Del)">Delete</button>
-    <button id="btn-new" title="New Project">New</button>
-    <button id="btn-save" title="Save Project">Save</button>
-    <button id="btn-export-png" title="Export as PNG">Export PNG</button>
-    <button id="btn-export-mp4" title="Export as MP4">Export MP4</button>
-    <select id="theme-switcher" title="Switch Theme">
-      <option value="default">Theme: Cyan</option>
-      <option value="purple">Theme: Purple</option>
-      <option value="red">Theme: Red</option>
-    </select>
-  </header>
+    <input type="file" id="image-upload" accept="image/*" class="hidden">
 
-  <!-- SIDEBAR TOOLS -->
-  <aside class="sidebar" role="toolbar" aria-label="Editor Tools">
-    <div class="tool-button" id="add-text" tabindex="0" title="Add Text">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17v-2h8v2H4zm0-6V9h12v2H4zm0-4V5h16v2H4z"/></svg>
-      Text
-    </div>
-    <div class="tool-button" id="add-shape" tabindex="0" title="Add Shape">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
-      Shape
-    </div>
-    <div class="tool-button" id="add-image" tabindex="0" title="Add Image">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5"/><path d="M21 15l-5-5-5 5"/></svg>
-      Image
-      <input type="file" id="file-image" accept="image/*" style="display:none" />
-    </div>
-    <div class="tool-button" id="add-video" tabindex="0" title="Add Video">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-1.104-.896-2-2-2H5c-1.104 0-2 .896-2 2v10c0 1.104.896 2 2 2h10c1.104 0 2-.896 2-2v-3.5l4 4v-11l-4 4z"/></svg>
-      Video
-      <input type="file" id="file-video" accept="video/*" style="display:none" />
-    </div>
-  </aside>
+    <!-- 3D Viewport -->
+    <div id="container"></div>
+    <!-- The new border element for the editing area -->
+    <div id="canvas-border"></div>
 
-  <!-- MAIN CANVAS -->
-  <main class="canvas" tabindex="0" aria-label="Editing Canvas">
-    <div class="canvas-inner" id="canvas"></div>
-  </main>
-
-  <!-- PROPERTIES PANEL -->
-  <aside class="properties" aria-label="Properties Panel">
-    <!-- POSITION & SIZE -->
-    <h2>Position & Size</h2>
-    <div class="property-group">
-      <label for="prop-x">Position X</label>
-      <input type="number" id="prop-x" />
-    </div>
-    <div class="property-group">
-      <label for="prop-y">Position Y</label>
-      <input type="number" id="prop-y" />
-    </div>
-    <div class="property-group">
-      <label for="prop-width">Width (px)</label>
-      <input type="number" id="prop-width" />
-    </div>
-    <div class="property-group">
-      <label for="prop-height">Height (px)</label>
-      <input type="number" id="prop-height" />
-    </div>
-
-    <!-- TEXT PROPERTIES -->
-    <h2 id="text-section">Text Properties</h2>
-    <div id="text-content">
-      <div class="property-group">
-        <label for="prop-text">Text Content</label>
-        <input type="text" id="prop-text" />
-      </div>
-      <div class="property-group">
-        <label for="text-font-family">Font Family</label>
-        <select id="text-font-family">
-          <option value="Orbitron">Orbitron</option>
-          <option value="Arial">Arial</option>
-          <option value="Helvetica">Helvetica</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Verdana">Verdana</option>
-        </select>
-      </div>
-      <div class="property-group">
-        <label for="text-font-size">Font Size (px)</label>
-        <input type="range" id="text-font-size" min="8" max="100" value="20" />
-        <span id="text-font-size-value" class="value-display">20px</span>
-      </div>
-      <div class="property-group">
-        <label for="text-color">Text Color</label>
-        <input type="color" id="text-color" value="#00ffff" />
-      </div>
-      <div class="property-group">
-        <label for="text-align">Text Align</label>
-        <select id="text-align">
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
-          <option value="justify">Justify</option>
-        </select>
-      </div>
-      <div class="property-row">
-        <button id="text-bold">Bold</button>
-        <button id="text-italic">Italic</button>
-        <button id="text-underline">Underline</button>
-      </div>
-    </div>
-
-    <!-- BORDER & BACKGROUND -->
-    <h2>Border & Background</h2>
-    <div class="property-group">
-      <label for="border-width">Border Width (px)</label>
-      <input type="range" id="border-width" min="0" max="20" value="0" />
-      <span id="border-width-value" class="value-display">0px</span>
-    </div>
-    <div class="property-group">
-      <label for="border-color">Border Color</label>
-      <input type="color" id="border-color" value="#00ffff" />
-    </div>
-    <div class="property-group">
-      <label for="border-style">Border Style</label>
-      <select id="border-style">
-        <option value="solid">Solid</option>
-        <option value="dashed">Dashed</option>
-        <option value="dotted">Dotted</option>
-        <option value="double">Double</option>
-        <option value="groove">Groove</option>
-        <option value="ridge">Ridge</option>
-      </select>
-    </div>
-    <div class="property-group">
-      <label for="border-radius">Border Radius (px)</label>
-      <input type="range" id="border-radius" min="0" max="50" value="0" />
-      <span id="border-radius-value" class="value-display">0px</span>
-    </div>
-    <div class="property-group">
-      <label for="background-color">Background Color</label>
-      <input type="color" id="background-color" value="#000000" />
-    </div>
-    <div class="property-group">
-      <label for="opacity">Opacity</label>
-      <input type="range" id="opacity" min="0" max="100" value="100" />
-      <span id="opacity-value" class="value-display">100%</span>
-    </div>
-
-    <!-- 2D & 3D TRANSFORMS -->
-    <h2>2D & 3D Transforms</h2>
-    <div class="property-group">
-      <label for="prop-rotation">Z Rotation (deg)</label>
-      <input type="range" id="prop-rotation" min="0" max="360" value="0" />
-      <span id="rotation-value" class="value-display">0°</span>
-    </div>
+    <!-- UI Panels -->
+    <!-- Top Header -->
+    <header class="ui-panel absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-2 z-10">
+        <h1 class="text-base md:text-lg font-bold tracking-wider">max<span class="text-purple-400">Edit</span></h1>
+        <div class="h-6 w-px bg-white/10"></div>
+        <div class="flex items-center gap-2">
+            <button id="export-gltf" class="btn text-xs px-3 py-1 rounded-md">Export GLTF</button>
+            <button id="export-obj" class="btn text-xs px-3 py-1 rounded-md">Export OBJ</button>
+            <button id="export-png" class="btn text-xs px-3 py-1 rounded-md">Export Image</button>
+        </div>
+    </header>
     
-    <!-- 3D ROTATIONS -->
-    <div class="property-group">
-      <label for="rotation-x">X Rotation (deg)</label>
-      <input type="range" id="rotation-x" min="-180" max="180" value="0" />
-      <span id="rotation-x-value" class="value-display">0°</span>
-    </div>
-    <div class="property-group">
-      <label for="rotation-y">Y Rotation (deg)</label>
-      <input type="range" id="rotation-y" min="-180" max="180" value="0" />
-      <span id="rotation-y-value" class="value-display">0°</span>
-    </div>
-    
-    <!-- 2D FLIPS -->
-    <div class="property-row">
-      <button id="flip-horizontal" title="Flip Horizontal">↔ Flip H</button>
-      <button id="flip-vertical" title="Flip Vertical">↕ Flip V</button>
-    </div>
-    
-    <div class="property-group">
-      <label for="flip-x">Scale X</label>
-      <input type="range" id="flip-x" min="-2" max="2" step="0.1" value="1" />
-      <span id="flip-x-value" class="value-display">1</span>
-    </div>
-    
-    <div class="property-group">
-      <label for="flip-y">Scale Y</label>
-      <input type="range" id="flip-y" min="-2" max="2" step="0.1" value="1" />
-      <span id="flip-y-value" class="value-display">1</span>
-    </div>
+    <!-- Main Toolbar -->
+    <div id="main-toolbar" class="ui-panel absolute top-20 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 z-10">
+        <button id="add-cube" class="btn icon-btn p-2 rounded-lg" title="Add Cube">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" /></svg>
+        </button>
+        <button id="add-sphere" class="btn icon-btn p-2 rounded-lg" title="Add Sphere">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12.75 19.5v-.75a7.5 7.5 0 00-7.5-7.5H4.5m0-6.75h.75c7.28 0 13.25 5.97 13.25 13.25v.75" /></svg>
+        </button>
+        <button id="add-text" class="btn icon-btn p-2 rounded-lg" title="Add Text">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.625 5.5h4.75a.875.875 0 0 1 0 1.75h-1.5v9.375a.875.875 0 0 1-1.75 0V7.25h-1.5a.875.875 0 0 1 0-1.75Z"/></svg>
+        </button>
+        <button id="add-image" class="btn icon-btn p-2 rounded-lg" title="Add Image Plane">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+            </svg>
+        </button>
 
-    <!-- 3D FLIPS -->
-    <div class="property-row">
-      <button id="flip-3d-x" title="3D Flip X">🔄 3D X</button>
-      <button id="flip-3d-y" title="3D Flip Y">🔄 3D Y</button>
-    </div>
+        <div class="h-6 w-px bg-white/10 mx-2"></div>
 
-    <!-- FILTERS & EFFECTS -->
-    <h2>Filters & Effects</h2>
-    <div class="property-group">
-      <label for="filter-brightness">Brightness</label>
-      <input type="range" id="filter-brightness" min="0" max="200" value="100" />
-      <span id="brightness-value" class="value-display">100%</span>
-    </div>
-    <div class="property-group">
-      <label for="filter-contrast">Contrast</label>
-      <input type="range" id="filter-contrast" min="0" max="200" value="100" />
-      <span id="contrast-value" class="value-display">100%</span>
-    </div>
-    <div class="property-group">
-      <label for="filter-saturate">Saturation</label>
-      <input type="range" id="filter-saturate" min="0" max="300" value="100" />
-      <span id="saturate-value" class="value-display">100%</span>
-    </div>
-    <div class="property-group">
-      <label for="filter-blur">Blur (px)</label>
-      <input type="range" id="filter-blur" min="0" max="20" value="0" />
-      <span id="blur-value" class="value-display">0px</span>
-    </div>
-    <div class="property-group">
-      <label for="filter-hue">Hue Rotate (deg)</label>
-      <input type="range" id="filter-hue" min="0" max="360" value="0" />
-      <span id="hue-value" class="value-display">0°</span>
+        <button id="tool-move" class="btn icon-btn p-2 rounded-lg active" title="Move (W)">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 17.25h7.5m-7.5-3.5h7.5m-1.5-6.75l-3.75-3.75-3.75 3.75m6.25 10.5l-3.75 3.75-3.75-3.75M6 12l-3.75 3.75L6 19.5m12-7.5l3.75 3.75L18 19.5" /></svg>
+        </button>
+        <button id="tool-rotate" class="btn icon-btn p-2 rounded-lg" title="Rotate (E)">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>
+        </button>
+        <button id="tool-scale" class="btn icon-btn p-2 rounded-lg" title="Scale (R)">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
+        </button>
+        <div class="h-6 w-px bg-white/10 mx-2"></div>
+         <button id="tool-delete" class="btn icon-btn p-2 rounded-lg text-red-400 hover:text-red-300" title="Delete (Del)">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+        </button>
     </div>
 
-    <!-- SHADOW EFFECTS -->
-    <h2>Shadow Effects</h2>
-    <div class="property-group">
-      <label for="shadow-x">Shadow X (px)</label>
-      <input type="range" id="shadow-x" min="-20" max="20" value="0" />
-      <span id="shadow-x-value" class="value-display">0px</span>
+    <!-- Right Sidebar: Properties Inspector -->
+    <div id="inspector-panel" class="ui-panel absolute right-4 w-64 p-5 hidden overflow-y-auto">
+        <div class="control-group">
+            <h3 class="font-semibold mb-3 text-sm">Transform</h3>
+            <div class="space-y-3 text-xs">
+                <!-- Position -->
+                <div class="space-y-2">
+                    <label class="font-medium">Position</label>
+                    <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="pos-x-slider" class="text-gray-400">X</label>
+                        <input type="range" min="-10" max="10" step="0.1" class="slider" id="pos-x-slider">
+                        <input type="number" step="0.1" class="input-field w-full" id="pos-x">
+                    </div>
+                    <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="pos-y-slider" class="text-gray-400">Y</label>
+                        <input type="range" min="-10" max="10" step="0.1" class="slider" id="pos-y-slider">
+                        <input type="number" step="0.1" class="input-field w-full" id="pos-y">
+                    </div>
+                    <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="pos-z-slider" class="text-gray-400">Z</label>
+                        <input type="range" min="-10" max="10" step="0.1" class="slider" id="pos-z-slider">
+                        <input type="number" step="0.1" class="input-field w-full" id="pos-z">
+                    </div>
+                </div>
+
+                <!-- Rotation -->
+                <div class="space-y-2 pt-2">
+                    <label class="font-medium">Rotation</label>
+                    <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="rot-x-slider" class="text-gray-400">X</label>
+                        <input type="range" min="0" max="360" step="1" class="slider" id="rot-x-slider">
+                        <input type="number" step="1" class="input-field w-full" id="rot-x">
+                    </div>
+                     <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="rot-y-slider" class="text-gray-400">Y</label>
+                        <input type="range" min="0" max="360" step="1" class="slider" id="rot-y-slider">
+                        <input type="number" step="1" class="input-field w-full" id="rot-y">
+                    </div>
+                     <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="rot-z-slider" class="text-gray-400">Z</label>
+                        <input type="range" min="0" max="360" step="1" class="slider" id="rot-z-slider">
+                        <input type="number" step="1" class="input-field w-full" id="rot-z">
+                    </div>
+                </div>
+
+                <!-- Scale -->
+                <div class="space-y-2 pt-2">
+                    <label class="font-medium">Scale</label>
+                    <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="scl-x-slider" class="text-gray-400">X</label>
+                        <input type="range" min="0.1" max="5" step="0.05" class="slider" id="scl-x-slider">
+                        <input type="number" step="0.1" class="input-field w-full" id="scl-x">
+                    </div>
+                    <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="scl-y-slider" class="text-gray-400">Y</label>
+                        <input type="range" min="0.1" max="5" step="0.05" class="slider" id="scl-y-slider">
+                        <input type="number" step="0.1" class="input-field w-full" id="scl-y">
+                    </div>
+                    <div class="grid grid-cols-[20px,1fr,60px] gap-2 items-center">
+                        <label for="scl-z-slider" class="text-gray-400">Z</label>
+                        <input type="range" min="0.1" max="5" step="0.05" class="slider" id="scl-z-slider">
+                        <input type="number" step="0.1" class="input-field w-full" id="scl-z">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3 class="font-semibold mb-3 text-sm">Style</h3>
+            <div class="space-y-3 text-xs">
+                 <!-- Opacity -->
+                <div class="grid grid-cols-[50px,1fr,40px] gap-2 items-center">
+                    <label for="opacity-slider">Opacity</label>
+                    <input type="range" min="0" max="1" step="0.01" class="slider" id="opacity-slider">
+                    <span id="opacity-value">1.0</span>
+                </div>
+                <!-- Color Picker -->
+                <div class="grid grid-cols-[50px,1fr] gap-2 items-center">
+                    <label for="color-picker">Color</label>
+                    <input type="color" id="color-picker" class="w-full h-7 p-0 border-none rounded cursor-pointer" style="background-color: transparent;">
+                </div>
+                 <!-- Saturation -->
+                <div class="grid grid-cols-[50px,1fr,40px] gap-2 items-center">
+                    <label for="saturation-slider">Saturation</label>
+                    <input type="range" min="0" max="1" step="0.01" class="slider" id="saturation-slider">
+                    <span id="saturation-value">1.0</span>
+                </div>
+            </div>
+        </div>
+        <div id="text-style-group" class="control-group hidden">
+             <h3 class="font-semibold mb-3 text-sm">Text Style</h3>
+             <div class="space-y-3 text-xs">
+                 <!-- Font Size -->
+                <div class="grid grid-cols-[70px,1fr,40px] gap-2 items-center">
+                    <label for="font-size-slider">Font Size</label>
+                    <input type="range" min="8" max="200" step="1" class="slider" id="font-size-slider">
+                    <span id="font-size-value">40</span>
+                </div>
+                <!-- Extrusion -->
+                <div class="grid grid-cols-[70px,1fr,40px] gap-2 items-center">
+                    <label for="extrusion-slider">Extrusion</label>
+                    <input type="range" min="0" max="100" step="1" class="slider" id="extrusion-slider">
+                    <span id="extrusion-value">5</span>
+                </div>
+             </div>
+        </div>
     </div>
-    <div class="property-group">
-      <label for="shadow-y">Shadow Y (px)</label>
-      <input type="range" id="shadow-y" min="-20" max="20" value="0" />
-      <span id="shadow-y-value" class="value-display">0px</span>
+    <div id="inspector-placeholder" class="ui-panel absolute right-4 w-64 p-5 text-center text-gray-400 text-sm flex flex-col justify-center">
+        <p>Select an object to edit its properties.</p>
     </div>
-    <div class="property-group">
-      <label for="shadow-blur">Shadow Blur (px)</label>
-      <input type="range" id="shadow-blur" min="0" max="30" value="0" />
-      <span id="shadow-blur-value" class="value-display">0px</span>
-    </div>
-    <div class="property-group">
-      <label for="shadow-color">Shadow Color</label>
-      <input type="color" id="shadow-color" value="#000000" />
-    </div>
-  </aside>
 
-  <!-- LAYERS PANEL -->
-  <aside class="layers" aria-label="Layers Panel" id="layers-panel">
-    <!-- Layers will be dynamically added here -->
-  </aside>
+    <!-- Bottom Bar: History & Camera -->
+     <div class="ui-panel absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2">
+        <!-- History -->
+        <button id="undo-btn" class="btn icon-btn p-2 rounded-lg" title="Undo">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+        </button>
+        <button id="redo-btn" class="btn icon-btn p-2 rounded-lg" title="Redo">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" /></svg>
+        </button>
+        <div class="h-6 w-px bg-white/10 mx-2"></div>
+        <!-- Camera Presets -->
+        <button id="cam-front" class="btn text-xs px-3 py-1 rounded-md">Front</button>
+        <button id="cam-top" class="btn text-xs px-3 py-1 rounded-md">Top</button>
+        <button id="cam-side" class="btn text-xs px-3 py-1 rounded-md">Side</button>
+        <button id="cam-iso" class="btn text-xs px-3 py-1 rounded-md">Isometric</button>
+        <button id="cam-reset" class="btn text-xs px-3 py-1 rounded-md">Reset</button>
+     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-<script>
-  // === GLOBALS ===
-  const canvas = document.getElementById('canvas');
-  const addTextBtn = document.getElementById('add-text');
-  const addShapeBtn = document.getElementById('add-shape');
-  const addImageBtn = document.getElementById('add-image');
-  const addVideoBtn = document.getElementById('add-video');
 
-  const fileImageInput = document.getElementById('file-image');
-  const fileVideoInput = document.getElementById('file-video');
-
-  // Basic properties
-  const propX = document.getElementById('prop-x');
-  const propY = document.getElementById('prop-y');
-  const propWidth = document.getElementById('prop-width');
-  const propHeight = document.getElementById('prop-height');
-  const propText = document.getElementById('prop-text');
-  const propRotation = document.getElementById('prop-rotation');
-
-  // Text properties
-  const textFontFamily = document.getElementById('text-font-family');
-  const textFontSize = document.getElementById('text-font-size');
-  const textColor = document.getElementById('text-color');
-  const textAlign = document.getElementById('text-align');
-  const textBold = document.getElementById('text-bold');
-  const textItalic = document.getElementById('text-italic');
-  const textUnderline = document.getElementById('text-underline');
-
-  // Border & Background
-  const borderWidth = document.getElementById('border-width');
-  const borderColor = document.getElementById('border-color');
-  const borderStyle = document.getElementById('border-style');
-  const borderRadius = document.getElementById('border-radius');
-  const backgroundColor = document.getElementById('background-color');
-  const opacity = document.getElementById('opacity');
-
-  // 3D Rotations
-  const rotationX = document.getElementById('rotation-x');
-  const rotationY = document.getElementById('rotation-y');
-
-  // Flip controls
-  const flipHorizontalBtn = document.getElementById('flip-horizontal');
-  const flipVerticalBtn = document.getElementById('flip-vertical');
-  const flip3DXBtn = document.getElementById('flip-3d-x');
-  const flip3DYBtn = document.getElementById('flip-3d-y');
-  const flipXSlider = document.getElementById('flip-x');
-  const flipYSlider = document.getElementById('flip-y');
-
-  // Filters
-  const filterBrightness = document.getElementById('filter-brightness');
-  const filterContrast = document.getElementById('filter-contrast');
-  const filterSaturate = document.getElementById('filter-saturate');
-  const filterBlur = document.getElementById('filter-blur');
-  const filterHue = document.getElementById('filter-hue');
-
-  // Shadow
-  const shadowX = document.getElementById('shadow-x');
-  const shadowY = document.getElementById('shadow-y');
-  const shadowBlur = document.getElementById('shadow-blur');
-  const shadowColor = document.getElementById('shadow-color');
-
-  // Undo/Redo controls
-  const undoBtn = document.getElementById('btn-undo');
-  const redoBtn = document.getElementById('btn-redo');
-  const deleteBtn = document.getElementById('btn-delete');
-
-  const layersPanel = document.getElementById('layers-panel');
-  const themeSwitcher = document.getElementById('theme-switcher');
-
-  let selectedElement = null;
-  let zoomLevel = 1;
-
-  // === VALUE DISPLAY UPDATES ===
-  function updateValueDisplays() {
-    const elements = [
-      { element: document.getElementById('text-font-size-value'), value: textFontSize.value + 'px' },
-      { element: document.getElementById('border-width-value'), value: borderWidth.value + 'px' },
-      { element: document.getElementById('border-radius-value'), value: borderRadius.value + 'px' },
-      { element: document.getElementById('opacity-value'), value: opacity.value + '%' },
-      { element: document.getElementById('rotation-value'), value: propRotation.value + '°' },
-      { element: document.getElementById('rotation-x-value'), value: rotationX.value + '°' },
-      { element: document.getElementById('rotation-y-value'), value: rotationY.value + '°' },
-      { element: document.getElementById('flip-x-value'), value: flipXSlider.value },
-      { element: document.getElementById('flip-y-value'), value: flipYSlider.value },
-      { element: document.getElementById('brightness-value'), value: filterBrightness.value + '%' },
-      { element: document.getElementById('contrast-value'), value: filterContrast.value + '%' },
-      { element: document.getElementById('saturate-value'), value: filterSaturate.value + '%' },
-      { element: document.getElementById('blur-value'), value: filterBlur.value + 'px' },
-      { element: document.getElementById('hue-value'), value: filterHue.value + '°' },
-      { element: document.getElementById('shadow-x-value'), value: shadowX.value + 'px' },
-      { element: document.getElementById('shadow-y-value'), value: shadowY.value + 'px' },
-      { element: document.getElementById('shadow-blur-value'), value: shadowBlur.value + 'px' }
-    ];
-
-    elements.forEach(item => {
-      if (item.element) {
-        item.element.textContent = item.value;
-      }
-    });
-  }
-
-  // === UNDO/REDO SYSTEM ===
-  let history = [];
-  let historyIndex = -1;
-  const MAX_HISTORY = 50;
-
-  function saveState() {
-    if (historyIndex < history.length - 1) {
-      history = history.slice(0, historyIndex + 1);
-    }
-    
-    const state = {
-      elements: layers.map(el => ({
-        type: el.dataset.type,
-        content: el.textContent || '',
-        style: {
-          left: el.style.left,
-          top: el.style.top,
-          width: el.style.width,
-          height: el.style.height,
-          transform: el.style.transform,
-          filter: el.style.filter,
-          border: el.style.border,
-          borderRadius: el.style.borderRadius,
-          backgroundColor: el.style.backgroundColor,
-          color: el.style.color,
-          fontSize: el.style.fontSize,
-          fontFamily: el.style.fontFamily,
-          fontWeight: el.style.fontWeight,
-          fontStyle: el.style.fontStyle,
-          textDecoration: el.style.textDecoration,
-          textAlign: el.style.textAlign,
-          opacity: el.style.opacity,
-          boxShadow: el.style.boxShadow
-        },
-        src: el.querySelector('img')?.src || el.querySelector('video')?.src || null
-      }))
-    };
-    
-    history.push(JSON.stringify(state));
-    historyIndex++;
-    
-    if (history.length > MAX_HISTORY) {
-      history.shift();
-      historyIndex--;
-    }
-    
-    updateUndoRedoButtons();
-  }
-
-  function undo() {
-    if (historyIndex > 0) {
-      historyIndex--;
-      restoreState(JSON.parse(history[historyIndex]));
-      updateUndoRedoButtons();
-    }
-  }
-
-  function redo() {
-    if (historyIndex < history.length - 1) {
-      historyIndex++;
-      restoreState(JSON.parse(history[historyIndex]));
-      updateUndoRedoButtons();
-    }
-  }
-
-  function restoreState(state) {
-    layers.forEach(el => el.remove());
-    layers = [];
-    selectedElement = null;
-    clearProperties();
-    
-    state.elements.forEach(elementData => {
-      const el = document.createElement('div');
-      el.classList.add('draggable', elementData.type);
-      el.dataset.type = elementData.type;
-      
-      Object.assign(el.style, elementData.style);
-      
-      if (elementData.type === 'text') {
-        el.textContent = elementData.content;
-      } else if (elementData.type === 'image' && elementData.src) {
-        const img = document.createElement('img');
-        img.src = elementData.src;
-        el.appendChild(img);
-      } else if (elementData.type === 'video' && elementData.src) {
-        const video = document.createElement('video');
-        video.src = elementData.src;
-        video.controls = true;
-        video.muted = true;
-        el.appendChild(video);
-      } else if (elementData.type === 'shape') {
-        // Shape properties are handled by styles
-      }
-      
-      makeDraggableAndResizable(el);
-      canvas.appendChild(el);
-      layers.push(el);
-    });
-    
-    renderLayers();
-  }
-
-  function updateUndoRedoButtons() {
-    undoBtn.disabled = historyIndex <= 0;
-    redoBtn.disabled = historyIndex >= history.length - 1;
-  }
-
-  undoBtn.addEventListener('click', undo);
-  redoBtn.addEventListener('click', redo);
-  deleteBtn.addEventListener('click', deleteSelected);
-
-  // === 3D FLIP FUNCTIONALITY ===
-  flip3DXBtn.addEventListener('click', () => {
-    if (!selectedElement) return;
-    const currentX = parseInt(rotationX.value);
-    rotationX.value = currentX === 0 ? 180 : 0;
-    updateValueDisplays();
-    applyTransforms();
-    saveState();
-  });
-
-  flip3DYBtn.addEventListener('click', () => {
-    if (!selectedElement) return;
-    const currentY = parseInt(rotationY.value);
-    rotationY.value = currentY === 0 ? 180 : 0;
-    updateValueDisplays();
-    applyTransforms();
-    saveState();
-  });
-
-  // === FLIP FUNCTIONALITY ===
-  flipHorizontalBtn.addEventListener('click', () => {
-    if (!selectedElement) return;
-    flipXSlider.value = flipXSlider.value == 1 ? -1 : 1;
-    updateValueDisplays();
-    applyTransforms();
-    saveState();
-  });
-
-  flipVerticalBtn.addEventListener('click', () => {
-    if (!selectedElement) return;
-    flipYSlider.value = flipYSlider.value == 1 ? -1 : 1;
-    updateValueDisplays();
-    applyTransforms();
-    saveState();
-  });
-
-  // === TEXT STYLE BUTTONS ===
-  textBold.addEventListener('click', () => {
-    if (!selectedElement || selectedElement.dataset.type !== 'text') return;
-    const isBold = selectedElement.style.fontWeight === 'bold';
-    selectedElement.style.fontWeight = isBold ? 'normal' : 'bold';
-    textBold.style.background = isBold ? 'none' : 'var(--primary-glow)';
-    textBold.style.color = isBold ? 'var(--primary-glow)' : 'var(--bg-dark)';
-    saveState();
-  });
-
-  textItalic.addEventListener('click', () => {
-    if (!selectedElement || selectedElement.dataset.type !== 'text') return;
-    const isItalic = selectedElement.style.fontStyle === 'italic';
-    selectedElement.style.fontStyle = isItalic ? 'normal' : 'italic';
-    textItalic.style.background = isItalic ? 'none' : 'var(--primary-glow)';
-    textItalic.style.color = isItalic ? 'var(--primary-glow)' : 'var(--bg-dark)';
-    saveState();
-  });
-
-  textUnderline.addEventListener('click', () => {
-    if (!selectedElement || selectedElement.dataset.type !== 'text') return;
-    const isUnderlined = selectedElement.style.textDecoration === 'underline';
-    selectedElement.style.textDecoration = isUnderlined ? 'none' : 'underline';
-    textUnderline.style.background = isUnderlined ? 'none' : 'var(--primary-glow)';
-    textUnderline.style.color = isUnderlined ? 'var(--primary-glow)' : 'var(--bg-dark)';
-    saveState();
-  });
-
-  // === APPLY ALL TRANSFORMS ===
-  function applyTransforms() {
-    if (!selectedElement) return;
-    
-    const rotation = parseInt(propRotation.value) || 0;
-    const rotX = parseInt(rotationX.value) || 0;
-    const rotY = parseInt(rotationY.value) || 0;
-    const scaleX = parseFloat(flipXSlider.value);
-    const scaleY = parseFloat(flipYSlider.value);
-    
-    selectedElement.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotation}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
-  }
-
-  // === APPLY ALL PROPERTIES ===
-  function applyPropertiesToElement() {
-    if (!selectedElement) return;
-
-    // Position and size
-    let x = parseInt(propX.value) || 0;
-    let y = parseInt(propY.value) || 0;
-    let w = parseInt(propWidth.value) || selectedElement.offsetWidth;
-    let h = parseInt(propHeight.value) || selectedElement.offsetHeight;
-
-    x = Math.min(Math.max(0, x), canvas.clientWidth - w);
-    y = Math.min(Math.max(0, y), canvas.clientHeight - h);
-
-    selectedElement.style.left = x + 'px';
-    selectedElement.style.top = y + 'px';
-    selectedElement.style.width = w + 'px';
-    selectedElement.style.height = h + 'px';
-
-    // Text properties
-    if (selectedElement.dataset.type === 'text') {
-      selectedElement.textContent = propText.value;
-      selectedElement.style.fontSize = textFontSize.value + 'px';
-      selectedElement.style.fontFamily = textFontFamily.value;
-      selectedElement.style.color = textColor.value;
-      selectedElement.style.textAlign = textAlign.value;
-    }
-
-    // Border and background
-    const bWidth = borderWidth.value;
-    if (bWidth > 0) {
-      selectedElement.style.border = `${bWidth}px ${borderStyle.value} ${borderColor.value}`;
-    } else {
-      selectedElement.style.border = 'none';
-    }
-    selectedElement.style.borderRadius = borderRadius.value + 'px';
-    
-    if (selectedElement.dataset.type !== 'text') {
-      selectedElement.style.backgroundColor = backgroundColor.value;
-    }
-    selectedElement.style.opacity = opacity.value / 100;
-
-    // Transforms
-    applyTransforms();
-
-    // Filters
-    const filters = [];
-    if (filterBrightness.value != 100) filters.push(`brightness(${filterBrightness.value}%)`);
-    if (filterContrast.value != 100) filters.push(`contrast(${filterContrast.value}%)`);
-    if (filterSaturate.value != 100) filters.push(`saturate(${filterSaturate.value}%)`);
-    if (filterBlur.value > 0) filters.push(`blur(${filterBlur.value}px)`);
-    if (filterHue.value > 0) filters.push(`hue-rotate(${filterHue.value}deg)`);
-    selectedElement.style.filter = filters.join(' ');
-
-    // Shadow
-    const sX = shadowX.value;
-    const sY = shadowY.value;
-    const sBlur = shadowBlur.value;
-    if (sX != 0 || sY != 0 || sBlur > 0) {
-      selectedElement.style.boxShadow = `${sX}px ${sY}px ${sBlur}px ${shadowColor.value}`;
-    } else {
-      selectedElement.style.boxShadow = 'none';
-    }
-  }
-
-  // === DELETE FUNCTION ===
-  function deleteSelected() {
-    if (selectedElement) {
-      removeLayer(selectedElement);
-      selectedElement.remove();
-      selectedElement = null;
-      clearProperties();
-      saveState();
-    }
-  }
-
-  // === KEYBOARD SHORTCUTS ===
-  window.addEventListener('keydown', e => {
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
-        e.preventDefault();
-        redo();
-      }
-    } else if (e.key === 'Delete' && selectedElement) {
-      deleteSelected();
-    }
-  });
-
-  // === DRAGGABLE + RESIZABLE ===
-  function makeDraggableAndResizable(el) {
-    el.style.position = 'absolute';
-
-    let dragging = false, dragOffsetX = 0, dragOffsetY = 0;
-
-    el.addEventListener('mousedown', (e) => {
-      if(e.target.classList.contains('resizer')) return;
-
-      e.preventDefault();
-      dragging = true;
-
-      const rect = el.getBoundingClientRect();
-      dragOffsetX = e.clientX - rect.left;
-      dragOffsetY = e.clientY - rect.top;
-
-      selectElement(el);
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if(!dragging) return;
-      e.preventDefault();
-
-      let x = e.clientX - dragOffsetX - canvas.getBoundingClientRect().left;
-      let y = e.clientY - dragOffsetY - canvas.getBoundingClientRect().top;
-
-      x = Math.min(Math.max(0, x), canvas.clientWidth - el.offsetWidth);
-      y = Math.min(Math.max(0, y), canvas.clientHeight - el.offsetHeight);
-
-      el.style.left = x + 'px';
-      el.style.top = y + 'px';
-
-      updateProperties(el);
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (dragging) {
-        dragging = false;
-        saveState();
-      }
-    });
-
-    createResizers(el);
-  }
-
-  function createResizers(el) {
-    const corners = ['nw', 'ne', 'sw', 'se'];
-    corners.forEach(corner => {
-      const resizer = document.createElement('div');
-      resizer.className = 'resizer ' + corner;
-      Object.assign(resizer.style, {
-        position: 'absolute',
-        width: '12px',
-        height: '12px',
-        background: 'var(--primary-glow)',
-        borderRadius: '50%',
-        cursor: corner + '-resize',
-        zIndex: 10,
-      });
-      switch(corner) {
-        case 'nw': resizer.style.left = '-6px'; resizer.style.top = '-6px'; break;
-        case 'ne': resizer.style.right = '-6px'; resizer.style.top = '-6px'; break;
-        case 'sw': resizer.style.left = '-6px'; resizer.style.bottom = '-6px'; break;
-        case 'se': resizer.style.right = '-6px'; resizer.style.bottom = '-6px'; break;
-      }
-      el.appendChild(resizer);
-
-      resizer.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startWidth = el.offsetWidth;
-        const startHeight = el.offsetHeight;
-        const startLeft = parseInt(el.style.left) || 0;
-        const startTop = parseInt(el.style.top) || 0;
-
-        function onMouseMove(ev) {
-          let dx = ev.clientX - startX;
-          let dy = ev.clientY - startY;
-
-          if(corner.includes('e')) {
-            el.style.width = Math.max(30, startWidth + dx) + 'px';
-          }
-          if(corner.includes('s')) {
-            el.style.height = Math.max(30, startHeight + dy) + 'px';
-          }
-          if(corner.includes('w')) {
-            let newWidth = Math.max(30, startWidth - dx);
-            if(newWidth !== el.offsetWidth) {
-              el.style.width = newWidth + 'px';
-              el.style.left = (startLeft + dx) + 'px';
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
             }
-          }
-          if(corner.includes('n')) {
-            let newHeight = Math.max(30, startHeight - dy);
-            if(newHeight !== el.offsetHeight) {
-              el.style.height = newHeight + 'px';
-              el.style.top = (startTop + dy) + 'px';
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+        import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+
+        // --- Core Scene Setup ---
+        let scene, camera, renderer, orbitControls, transformControls;
+        let raycaster, mouse;
+        let selectedObject = null;
+        const sceneObjects = [];
+        const initialCameraPosition = new THREE.Vector3(5, 5, 10);
+
+        // --- UI Elements ---
+        const container = document.getElementById('container');
+        const canvasBorder = document.getElementById('canvas-border');
+        const inspectorPanel = document.getElementById('inspector-panel');
+        const inspectorPlaceholder = document.getElementById('inspector-placeholder');
+        const textStyleGroup = document.getElementById('text-style-group');
+        const imageUploadInput = document.getElementById('image-upload');
+        
+        // Transform Sliders
+        const posXSlider = document.getElementById('pos-x-slider');
+        const posYSlider = document.getElementById('pos-y-slider');
+        const posZSlider = document.getElementById('pos-z-slider');
+        const rotXSlider = document.getElementById('rot-x-slider');
+        const rotYSlider = document.getElementById('rot-y-slider');
+        const rotZSlider = document.getElementById('rot-z-slider');
+        const sclXSlider = document.getElementById('scl-x-slider');
+        const sclYSlider = document.getElementById('scl-y-slider');
+        const sclZSlider = document.getElementById('scl-z-slider');
+
+        // Transform Inputs
+        const posX = document.getElementById('pos-x');
+        const posY = document.getElementById('pos-y');
+        const posZ = document.getElementById('pos-z');
+        const rotX = document.getElementById('rot-x');
+        const rotY = document.getElementById('rot-y');
+        const rotZ = document.getElementById('rot-z');
+        const sclX = document.getElementById('scl-x');
+        const sclY = document.getElementById('scl-y');
+        const sclZ = document.getElementById('scl-z');
+
+        // Style Inputs
+        const opacitySlider = document.getElementById('opacity-slider');
+        const opacityValue = document.getElementById('opacity-value');
+        const colorPicker = document.getElementById('color-picker');
+        const saturationSlider = document.getElementById('saturation-slider');
+        const saturationValue = document.getElementById('saturation-value');
+        const fontSizeSlider = document.getElementById('font-size-slider');
+        const fontSizeValue = document.getElementById('font-size-value');
+        const extrusionSlider = document.getElementById('extrusion-slider');
+        const extrusionValue = document.getElementById('extrusion-value');
+        
+        // --- History (Undo/Redo) ---
+        const historyStack = [];
+        const redoStack = [];
+        const MAX_HISTORY = 50;
+        let isDragging = false; // Flag to prevent flooding history during transform
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.copy(initialCameraPosition);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+
+            // Grid Helper
+            const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+            scene.add(gridHelper);
+
+            // Controls
+            orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+
+            transformControls = new TransformControls(camera, renderer.domElement);
+            transformControls.addEventListener('dragging-changed', event => {
+                orbitControls.enabled = !event.value;
+                isDragging = event.value;
+                if (!isDragging) { // On drag end, push state
+                    pushHistoryState();
+                }
+            });
+            transformControls.addEventListener('objectChange', () => {
+                 updateInspector();
+            });
+            scene.add(transformControls);
+            
+            // Raycasting for selection
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('click', onClick);
+            setupUIListeners();
+            
+            // Initial Object
+            addObject('cube');
+
+            // Set initial canvas bounds
+            updateCanvasBounds();
+
+            // Start Animation Loop
+            animate();
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            orbitControls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            updateCanvasBounds();
+        }
+
+        function updateCanvasBounds() {
+            // Get all UI elements that define the boundaries
+            const header = document.querySelector('header.ui-panel');
+            const mainToolbar = document.getElementById('main-toolbar');
+            const rightPanel = inspectorPanel.classList.contains('hidden') ? inspectorPlaceholder : inspectorPanel;
+            const bottomBar = document.querySelector('.ui-panel.bottom-4');
+
+            const padding = 20; // Space between UI panels and the canvas border
+
+            // Calculate vertical bounds based on the lowest top-panel
+            const top = mainToolbar.getBoundingClientRect().bottom + padding;
+
+            // Calculate horizontal bounds
+            const left = padding;
+            const right = rightPanel.getBoundingClientRect().left - padding;
+            const bottom = bottomBar.getBoundingClientRect().top - padding;
+
+            const newWidth = right - left;
+            const newHeight = bottom - top;
+
+            // Update the Right Panels to match canvas vertical bounds
+            inspectorPanel.style.top = `${top}px`;
+            inspectorPanel.style.height = `${newHeight}px`;
+            inspectorPlaceholder.style.top = `${top}px`;
+            inspectorPlaceholder.style.height = `${newHeight}px`;
+
+            // Update the border element
+            canvasBorder.style.top = `${top}px`;
+            canvasBorder.style.left = `${left}px`;
+            canvasBorder.style.width = `${newWidth}px`;
+            canvasBorder.style.height = `${newHeight}px`;
+
+            // Update the three.js container (it's inside the border)
+            container.style.top = `${top}px`;
+            container.style.left = `${left}px`;
+            container.style.width = `${newWidth}px`;
+            container.style.height = `${newHeight}px`;
+            
+            // Update three.js renderer and camera
+            if(camera && renderer) {
+                camera.aspect = newWidth / newHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(newWidth, newHeight);
             }
-          }
-
-          updateProperties(el);
         }
-        function onMouseUp() {
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
-          saveState();
+
+
+        // --- Object Selection ---
+        function onClick(event) {
+            // Don't select if dragging gizmo
+            if (isDragging) return;
+            
+            const rect = container.getBoundingClientRect();
+
+            // Calculate mouse position relative to the container element
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Normalize coordinates for the raycaster
+            mouse.x = (x / rect.width) * 2 - 1;
+            mouse.y = -(y / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(sceneObjects, true);
+
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                 if (object !== selectedObject) {
+                    selectObject(object);
+                }
+            } else {
+                deselectObject();
+            }
         }
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-      });
-    });
-  }
+        
+        function selectObject(object) {
+            selectedObject = object;
+            transformControls.attach(object);
+            updateInspector();
+            inspectorPanel.classList.remove('hidden');
+            inspectorPlaceholder.classList.add('hidden');
+            updateCanvasBounds(); // Recalculate bounds when inspector appears
+        }
 
-  // === SELECT ELEMENT ===
-  function selectElement(el) {
-    if(selectedElement) {
-      selectedElement.classList.remove('selected');
-    }
-    selectedElement = el;
-    selectedElement.classList.add('selected');
+        function deselectObject() {
+            selectedObject = null;
+            transformControls.detach();
+            inspectorPanel.classList.add('hidden');
+            inspectorPlaceholder.classList.remove('hidden');
+            updateCanvasBounds(); // Recalculate bounds when inspector hides
+            updateInspector();
+        }
 
-    updateProperties(el);
-    updateLayersSelection(el);
-  }
+        function deleteSelectedObject() {
+            if (!selectedObject) return;
 
-  // === UPDATE PROPERTIES PANEL ===
-  function updateProperties(el) {
-    const x = parseInt(el.style.left) || 0;
-    const y = parseInt(el.style.top) || 0;
-    const width = el.offsetWidth;
-    const height = el.offsetHeight;
-    
-    propX.value = x;
-    propY.value = y;
-    propWidth.value = width;
-    propHeight.value = height;
+            // Remove from scene and data array
+            const index = sceneObjects.indexOf(selectedObject);
+            if (index > -1) {
+                sceneObjects.splice(index, 1);
+            }
+            scene.remove(selectedObject);
 
-    // Parse transforms
-    const transform = el.style.transform || '';
-    const rotateZMatch = transform.match(/rotateZ$$([^)]+)$$/);
-    const rotateXMatch = transform.match(/rotateX$$([^)]+)$$/);
-    const rotateYMatch = transform.match(/rotateY$$([^)]+)$$/);
-    const scaleXMatch = transform.match(/scaleX$$([^)]+)$$/);
-    const scaleYMatch = transform.match(/scaleY$$([^)]+)$$/);
-    
-    propRotation.value = rotateZMatch ? parseInt(rotateZMatch[1]) : 0;
-    rotationX.value = rotateXMatch ? parseInt(rotateXMatch[1]) : 0;
-    rotationY.value = rotateYMatch ? parseInt(rotateYMatch[1]) : 0;
-    flipXSlider.value = scaleXMatch ? parseFloat(scaleXMatch[1]) : 1;
-    flipYSlider.value = scaleYMatch ? parseFloat(scaleYMatch[1]) : 1;
+            // Clean up geometry and material
+            if(selectedObject.geometry) selectedObject.geometry.dispose();
+            if(selectedObject.material) selectedObject.material.dispose();
+            
+            deselectObject();
+        }
 
-    // Text properties
-    if(el.dataset.type === 'text') {
-      propText.value = el.textContent;
-      textFontSize.value = parseInt(el.style.fontSize) || 20;
-      textFontFamily.value = el.style.fontFamily || 'Orbitron';
-      textColor.value = rgbToHex(el.style.color) || '#00ffff';
-      textAlign.value = el.style.textAlign || 'left';
-      
-      // Update button states
-      textBold.style.background = el.style.fontWeight === 'bold' ? 'var(--primary-glow)' : 'none';
-      textBold.style.color = el.style.fontWeight === 'bold' ? 'var(--bg-dark)' : 'var(--primary-glow)';
-      textItalic.style.background = el.style.fontStyle === 'italic' ? 'var(--primary-glow)' : 'none';
-      textItalic.style.color = el.style.fontStyle === 'italic' ? 'var(--bg-dark)' : 'var(--primary-glow)';
-      textUnderline.style.background = el.style.textDecoration === 'underline' ? 'var(--primary-glow)' : 'none';
-      textUnderline.style.color = el.style.textDecoration === 'underline' ? 'var(--bg-dark)' : 'var(--primary-glow)';
-      
-      document.getElementById('text-section').style.display = 'block';
-      document.getElementById('text-content').style.display = 'block';
-    } else {
-      document.getElementById('text-section').style.display = 'none';
-      document.getElementById('text-content').style.display = 'none';
-    }
+        // --- UI & Inspector Logic ---
+        function updateInspector() {
+            if (selectedObject) {
+                // Position
+                posX.value = selectedObject.position.x.toFixed(2);
+                posXSlider.value = selectedObject.position.x;
+                posY.value = selectedObject.position.y.toFixed(2);
+                posYSlider.value = selectedObject.position.y;
+                posZ.value = selectedObject.position.z.toFixed(2);
+                posZSlider.value = selectedObject.position.z;
+                // Rotation
+                const rotXDeg = THREE.MathUtils.radToDeg(selectedObject.rotation.x);
+                const rotYDeg = THREE.MathUtils.radToDeg(selectedObject.rotation.y);
+                const rotZDeg = THREE.MathUtils.radToDeg(selectedObject.rotation.z);
+                rotX.value = rotXDeg.toFixed(0);
+                rotXSlider.value = rotXDeg;
+                rotY.value = rotYDeg.toFixed(0);
+                rotYSlider.value = rotYDeg;
+                rotZ.value = rotZDeg.toFixed(0);
+                rotZSlider.value = rotZDeg;
+                // Scale
+                sclX.value = selectedObject.scale.x.toFixed(2);
+                sclXSlider.value = selectedObject.scale.x;
+                sclY.value = selectedObject.scale.y.toFixed(2);
+                sclYSlider.value = selectedObject.scale.y;
+                sclZ.value = selectedObject.scale.z.toFixed(2);
+                sclZSlider.value = selectedObject.scale.z;
+                
+                // Style
+                opacitySlider.value = selectedObject.material.opacity;
+                opacityValue.textContent = selectedObject.material.opacity.toFixed(2);
+                
+                const color = new THREE.Color(selectedObject.material.color.getHex());
+                colorPicker.value = '#' + color.getHexString();
 
-    // Border and background
-    const borderMatch = (el.style.border || '').match(/(\d+)px\s+(\w+)\s+(#?\w+)/);
-    if (borderMatch) {
-      borderWidth.value = borderMatch[1];
-      borderStyle.value = borderMatch[2];
-      borderColor.value = borderMatch[3];
-    } else {
-      borderWidth.value = 0;
-    }
-    borderRadius.value = parseInt(el.style.borderRadius) || 0;
-    backgroundColor.value = rgbToHex(el.style.backgroundColor) || '#000000';
-    opacity.value = (parseFloat(el.style.opacity) || 1) * 100;
+                const hsl = {};
+                color.getHSL(hsl);
+                saturationSlider.value = hsl.s;
+                saturationValue.textContent = hsl.s.toFixed(2);
 
-    // Parse filters
-    const filterStyle = el.style.filter || '';
-    filterBrightness.value = getFilterValue(filterStyle, 'brightness', 1) * 100;
-    filterContrast.value = getFilterValue(filterStyle, 'contrast', 1) * 100;
-    filterSaturate.value = getFilterValue(filterStyle, 'saturate', 1) * 100;
-    filterBlur.value = getFilterValue(filterStyle, 'blur', 0);
-    filterHue.value = getFilterValue(filterStyle, 'hue-rotate', 0);
+                // Text-specific controls
+                if (selectedObject.userData.isText) {
+                    textStyleGroup.classList.remove('hidden');
+                    fontSizeSlider.value = selectedObject.userData.fontSize;
+                    fontSizeValue.textContent = selectedObject.userData.fontSize;
+                    extrusionSlider.value = selectedObject.userData.extrusion;
+                    extrusionValue.textContent = selectedObject.userData.extrusion;
+                } else {
+                    textStyleGroup.classList.add('hidden');
+                }
+            }
+        }
+        
+        function updateObjectFromInspector() {
+            if (!selectedObject) return;
 
-    // Parse shadow
-    const shadowMatch = (el.style.boxShadow || '').match(/(-?\d+)px\s+(-?\d+)px\s+(\d+)px\s+(#?\w+)/);
-    if (shadowMatch) {
-      shadowX.value = shadowMatch[1];
-      shadowY.value = shadowMatch[2];
-      shadowBlur.value = shadowMatch[3];
-      shadowColor.value = shadowMatch[4];
-    } else {
-      shadowX.value = 0;
-      shadowY.value = 0;
-      shadowBlur.value = 0;
-    }
+            // Position
+            selectedObject.position.set(parseFloat(posX.value), parseFloat(posY.value), parseFloat(posZ.value));
+            // Rotation
+            selectedObject.rotation.set(
+                parseFloat(rotX.value) * Math.PI / 180,
+                parseFloat(rotY.value) * Math.PI / 180,
+                parseFloat(rotZ.value) * Math.PI / 180
+            );
+            // Scale
+            selectedObject.scale.set(parseFloat(sclX.value), parseFloat(sclY.value), parseFloat(sclZ.value));
+        }
 
-    updateValueDisplays();
-  }
+        function setupUIListeners() {
+            // Transform Inputs
+            const transformInputs = [
+                { slider: posXSlider, input: posX, prop: 'position', axis: 'x', fixed: 2 },
+                { slider: posYSlider, input: posY, prop: 'position', axis: 'y', fixed: 2 },
+                { slider: posZSlider, input: posZ, prop: 'position', axis: 'z', fixed: 2 },
+                { slider: rotXSlider, input: rotX, prop: 'rotation', axis: 'x', fixed: 0, isRotation: true },
+                { slider: rotYSlider, input: rotY, prop: 'rotation', axis: 'y', fixed: 0, isRotation: true },
+                { slider: rotZSlider, input: rotZ, prop: 'rotation', axis: 'z', fixed: 0, isRotation: true },
+                { slider: sclXSlider, input: sclX, prop: 'scale', axis: 'x', fixed: 2 },
+                { slider: sclYSlider, input: sclY, prop: 'scale', axis: 'y', fixed: 2 },
+                { slider: sclZSlider, input: sclZ, prop: 'scale', axis: 'z', fixed: 2 },
+            ];
 
-  // Helper functions
-  function rgbToHex(rgb) {
-    if (!rgb || rgb === 'transparent') return '#000000';
-    if (rgb.startsWith('#')) return rgb;
-    const match = rgb.match(/\d+/g);
-    if (!match) return '#000000';
-    return '#' + match.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
-  }
+            transformInputs.forEach(({ slider, input, prop, axis, fixed, isRotation }) => {
+                slider.addEventListener('input', () => {
+                    if (!selectedObject) return;
+                    const value = parseFloat(slider.value);
+                    input.value = value.toFixed(fixed);
+                    const finalValue = isRotation ? THREE.MathUtils.degToRad(value) : value;
+                    selectedObject[prop][axis] = finalValue;
+                });
+                slider.addEventListener('change', pushHistoryState);
 
-  function getFilterValue(filterString, filterName, defaultValue) {
-    const regex = new RegExp(`${filterName}\$$([^)]+)\$$`);
-    const match = filterString.match(regex);
-    if(!match) return defaultValue;
-    let val = match[1];
-    if(val.endsWith('%')) val = val.slice(0, -1) / 100;
-    else if(val.endsWith('deg')) val = parseFloat(val);
-    else if(val.endsWith('px')) val = parseFloat(val);
-    else val = parseFloat(val);
-    return val;
-  }
+                input.addEventListener('change', () => {
+                    if (!selectedObject) return;
+                    const value = parseFloat(input.value);
+                    slider.value = value;
+                    const finalValue = isRotation ? THREE.MathUtils.degToRad(value) : value;
+                    selectedObject[prop][axis] = finalValue;
+                    pushHistoryState();
+                });
+            });
+            
+            // Style Inputs
+            opacitySlider.addEventListener('input', () => {
+                if (!selectedObject) return;
+                const value = parseFloat(opacitySlider.value);
+                selectedObject.material.opacity = value;
+                selectedObject.material.transparent = value < 1.0;
+                opacityValue.textContent = value.toFixed(2);
+            });
+            opacitySlider.addEventListener('change', pushHistoryState); // On release
+            
+            colorPicker.addEventListener('input', () => {
+                if (!selectedObject) return;
+                selectedObject.material.color.set(colorPicker.value);
+                // Also update saturation slider as the color has changed
+                const color = new THREE.Color(colorPicker.value);
+                const hsl = {};
+                color.getHSL(hsl);
+                saturationSlider.value = hsl.s;
+                saturationValue.textContent = hsl.s.toFixed(2);
+            });
+            colorPicker.addEventListener('change', pushHistoryState);
 
-  // === ELEMENT CREATION ===
-  addTextBtn.addEventListener('click', () => {
-    const el = document.createElement('div');
-    el.textContent = 'New Text';
-    el.classList.add('draggable', 'text');
-    el.style.left = '50px';
-    el.style.top = '50px';
-    el.style.width = '150px';
-    el.style.height = 'auto';
-    el.style.fontSize = '20px';
-    el.style.fontFamily = 'Orbitron';
-    el.style.color = '#00ffff';
-    el.dataset.type = 'text';
+            saturationSlider.addEventListener('input', () => {
+                if (!selectedObject) return;
+                const saturation = parseFloat(saturationSlider.value);
+                const color = new THREE.Color();
+                const currentHSL = {};
+                selectedObject.material.color.getHSL(currentHSL);
+                color.setHSL(currentHSL.h, saturation, currentHSL.l);
+                selectedObject.material.color.set(color);
+                saturationValue.textContent = saturation.toFixed(2);
+            });
+            saturationSlider.addEventListener('change', pushHistoryState);
+            
+            // Text Inputs
+            fontSizeSlider.addEventListener('input', () => {
+                 if (!selectedObject || !selectedObject.userData.isText) return;
+                 fontSizeValue.textContent = fontSizeSlider.value;
+                 updateTextGeometry();
+            });
+            fontSizeSlider.addEventListener('change', pushHistoryState);
 
-    makeDraggableAndResizable(el);
-    canvas.appendChild(el);
-    selectElement(el);
-    addLayer(el);
-    saveState();
-  });
+            extrusionSlider.addEventListener('input', () => {
+                 if (!selectedObject || !selectedObject.userData.isText) return;
+                 extrusionValue.textContent = extrusionSlider.value;
+                 updateTextGeometry();
+            });
+            extrusionSlider.addEventListener('change', pushHistoryState);
 
-  addShapeBtn.addEventListener('click', () => {
-    const el = document.createElement('div');
-    el.classList.add('draggable', 'shape');
-    el.style.left = '100px';
-    el.style.top = '100px';
-    el.style.width = '100px';
-    el.style.height = '100px';
-    el.style.borderRadius = '50%';
-    el.style.backgroundColor = '#00ffff';
-    el.dataset.type = 'shape';
+            // Add Object Buttons
+            document.getElementById('add-cube').addEventListener('click', () => addObject('cube'));
+            document.getElementById('add-sphere').addEventListener('click', () => addObject('sphere'));
+            document.getElementById('add-text').addEventListener('click', () => addObject('text'));
+            document.getElementById('add-image').addEventListener('click', () => {
+                imageUploadInput.click();
+            });
 
-    makeDraggableAndResizable(el);
-    canvas.appendChild(el);
-    selectElement(el);
-    addLayer(el);
-    saveState();
-  });
+            imageUploadInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        addObject('image', { imageUrl: e.target.result });
+                    };
+                    reader.readAsDataURL(file);
+                    imageUploadInput.value = ''; // Allow re-uploading the same file
+                }
+            });
+            
+            // New Transform Toolbar Buttons
+            const toolMoveBtn = document.getElementById('tool-move');
+            const toolRotateBtn = document.getElementById('tool-rotate');
+            const toolScaleBtn = document.getElementById('tool-scale');
+            const toolDeleteBtn = document.getElementById('tool-delete');
+            const toolBtns = [toolMoveBtn, toolRotateBtn, toolScaleBtn];
 
-  addImageBtn.addEventListener('click', () => {
-    fileImageInput.click();
-  });
-  fileImageInput.addEventListener('change', () => {
-    const file = fileImageInput.files[0];
-    if(!file) return;
+            const setActiveTool = (activeBtn) => {
+                toolBtns.forEach(btn => btn.classList.remove('active'));
+                activeBtn.classList.add('active');
+            };
 
-    const url = URL.createObjectURL(file);
-    const el = document.createElement('div');
-    el.classList.add('draggable', 'image');
-    el.style.left = '100px';
-    el.style.top = '100px';
-    el.style.width = '200px';
-    el.style.height = 'auto';
-    el.dataset.type = 'image';
+            toolMoveBtn.addEventListener('click', () => {
+                transformControls.setMode('translate');
+                setActiveTool(toolMoveBtn);
+            });
+            toolRotateBtn.addEventListener('click', () => {
+                transformControls.setMode('rotate');
+                setActiveTool(toolRotateBtn);
+            });
+            toolScaleBtn.addEventListener('click', () => {
+                transformControls.setMode('scale');
+                setActiveTool(toolScaleBtn);
+            });
+            toolDeleteBtn.addEventListener('click', deleteSelectedObject);
 
-    const img = document.createElement('img');
-    img.src = url;
-    img.alt = file.name;
-    el.appendChild(img);
 
-    makeDraggableAndResizable(el);
-    canvas.appendChild(el);
-    selectElement(el);
-    addLayer(el);
-    saveState();
+            // Camera Buttons
+            document.getElementById('cam-front').addEventListener('click', () => setCameraView(0, 0, 10));
+            document.getElementById('cam-top').addEventListener('click', () => setCameraView(0, 10, 0.01));
+            document.getElementById('cam-side').addEventListener('click', () => setCameraView(10, 0, 0));
+            document.getElementById('cam-iso').addEventListener('click', () => setCameraView(10, 10, 10));
+            document.getElementById('cam-reset').addEventListener('click', () => setCameraView(initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z));
 
-    fileImageInput.value = '';
-  });
+            // History Buttons
+            document.getElementById('undo-btn').addEventListener('click', undo);
+            document.getElementById('redo-btn').addEventListener('click', redo);
+            
+            // Export Buttons
+            document.getElementById('export-gltf').addEventListener('click', exportGLTF);
+            document.getElementById('export-obj').addEventListener('click', exportOBJ);
+            document.getElementById('export-png').addEventListener('click', exportPNG);
+        }
 
-  addVideoBtn.addEventListener('click', () => {
-    fileVideoInput.click();
-  });
-  fileVideoInput.addEventListener('change', () => {
-    const file = fileVideoInput.files[0];
-    if(!file) return;
-
-    const url = URL.createObjectURL(file);
-    const el = document.createElement('div');
-    el.classList.add('draggable', 'video');
-    el.style.left = '100px';
-    el.style.top = '100px';
-    el.style.width = '320px';
-    el.style.height = '180px';
-    el.dataset.type = 'video';
-
-    const video = document.createElement('video');
-    video.src = url;
-    video.controls = true;
-    video.autoplay = false;
-    video.loop = false;
-    video.muted = true;
-    el.appendChild(video);
-
-    makeDraggableAndResizable(el);
-    canvas.appendChild(el);
-    selectElement(el);
-    addLayer(el);
-    saveState();
-
-    fileVideoInput.value = '';
-  });
-
-  // === EVENT LISTENERS FOR ALL CONTROLS ===
-  const allInputs = [
-    propX, propY, propWidth, propHeight, propRotation, rotationX, rotationY,
-    flipXSlider, flipYSlider, textFontSize, textFontFamily, textColor, textAlign,
-    borderWidth, borderColor, borderStyle, borderRadius, backgroundColor, opacity,
-    filterBrightness, filterContrast, filterSaturate, filterBlur, filterHue,
-    shadowX, shadowY, shadowBlur, shadowColor
-  ];
-
-  allInputs.forEach(input => {
-    if (input) {
-      input.addEventListener('input', () => {
-        applyPropertiesToElement();
-        updateValueDisplays();
-      });
-      input.addEventListener('change', saveState);
-    }
-  });
-
-  propText.addEventListener('input', () => {
-    applyPropertiesToElement();
-  });
-  propText.addEventListener('change', saveState);
-
-  // === SELECT ELEMENT ON CLICK ===
-  canvas.addEventListener('click', e => {
-    if(e.target === canvas || e.target.id === 'canvas') {
-      if(selectedElement) {
-        selectedElement.classList.remove('selected');
-        selectedElement = null;
-        clearProperties();
-        updateLayersSelection(null);
-      }
-    }
-  });
-
-  // === CLEAR PROPERTIES ===
-  function clearProperties() {
-    propX.value = '';
-    propY.value = '';
-    propWidth.value = '';
-    propHeight.value = '';
-    propRotation.value = 0;
-    rotationX.value = 0;
-    rotationY.value = 0;
-    propText.value = '';
-    flipXSlider.value = 1;
-    flipYSlider.value = 1;
-    textFontSize.value = 20;
-    textColor.value = '#00ffff';
-    borderWidth.value = 0;
-    borderRadius.value = 0;
-    opacity.value = 100;
-    filterBrightness.value = 100;
-    filterContrast.value = 100;
-    filterSaturate.value = 100;
-    filterBlur.value = 0;
-    filterHue.value = 0;
-    shadowX.value = 0;
-    shadowY.value = 0;
-    shadowBlur.value = 0;
-    updateValueDisplays();
-    
-    // Hide text section when no element selected
-    document.getElementById('text-section').style.display = 'none';
-    document.getElementById('text-content').style.display = 'none';
-  }
-
-  // === LAYERS PANEL LOGIC ===
-  let layers = [];
-
-  function addLayer(el) {
-    layers.push(el);
-    renderLayers();
-  }
-  function removeLayer(el) {
-    layers = layers.filter(l => l !== el);
-    renderLayers();
-  }
-
-  function renderLayers() {
-    const zoomControls = document.getElementById('zoom-controls');
-    layersPanel.innerHTML = '';
-    
-    [...layers].reverse().forEach((el, i) => {
-      const layerItem = document.createElement('div');
-      layerItem.className = 'layer-item';
-      layerItem.textContent = el.dataset.type.charAt(0).toUpperCase() + el.dataset.type.slice(1);
-      if(el === selectedElement) layerItem.classList.add('selected');
-      layerItem.title = `Layer: ${el.dataset.type}`;
-
-      layerItem.addEventListener('click', () => {
-        selectElement(el);
-      });
-
-      layerItem.draggable = true;
-      layerItem.addEventListener('dragstart', (ev) => {
-        ev.dataTransfer.setData('text/plain', layers.indexOf(el));
-      });
-      layerItem.addEventListener('dragover', (ev) => ev.preventDefault());
-      layerItem.addEventListener('drop', (ev) => {
-        ev.preventDefault();
-        const fromIndex = parseInt(ev.dataTransfer.getData('text/plain'));
-        const toIndex = layers.length - 1 - i;
-        if(fromIndex === toIndex) return;
-
-        const movedLayer = layers.splice(fromIndex,1)[0];
-        layers.splice(toIndex, 0, movedLayer);
-
-        layers.forEach((layerEl, idx) => {
-          layerEl.style.zIndex = idx + 10;
+        // --- Object Creation ---
+        const fontLoader = new FontLoader();
+        let defaultFont = null;
+        fontLoader.load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', (font) => {
+            defaultFont = font;
         });
-        renderLayers();
-        saveState();
-      });
 
-      layersPanel.appendChild(layerItem);
-    });
-    
-    if (zoomControls) {
-      layersPanel.appendChild(zoomControls);
-    }
-    
-    layers.forEach((layerEl, idx) => {
-      layerEl.style.zIndex = idx + 10;
-    });
-  }
+        function addObject(type, options = {}) {
+            let geometry, material, mesh;
+            material = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.5 });
+            
+            switch(type) {
+                case 'cube':
+                    geometry = new THREE.BoxGeometry(1, 1, 1);
+                    mesh = new THREE.Mesh(geometry, material);
+                    break;
+                case 'sphere':
+                    geometry = new THREE.SphereGeometry(0.75, 32, 16);
+                    mesh = new THREE.Mesh(geometry, material);
+                    break;
+                case 'text':
+                    if (!defaultFont) { alert('Font not loaded yet.'); return; }
+                     const textGeo = new TextGeometry('Hello 3D', {
+                        font: defaultFont,
+                        size: 1,
+                        height: 0.2,
+                        curveSegments: 12,
+                        bevelEnabled: true,
+                        bevelThickness: 0.03,
+                        bevelSize: 0.02,
+                        bevelOffset: 0,
+                        bevelSegments: 5
+                    });
+                    textGeo.center();
+                    mesh = new THREE.Mesh(textGeo, material);
+                    mesh.userData = { isText: true, text: 'Hello 3D', fontSize: 100, extrusion: 20 }; // Note: size here is different from UI
+                    mesh.scale.set(0.01, 0.01, 0.01); // Scale down to a manageable size
+                    break;
+                case 'image': {
+                    geometry = new THREE.PlaneGeometry(2, 2); // Default size
+                    const imageUrl = options.imageUrl;
+                    if (!imageUrl) {
+                        console.error("No image URL provided for image object.");
+                        return;
+                    }
 
-  function updateLayersSelection(el) {
-    const layerItems = layersPanel.querySelectorAll('.layer-item');
-    layerItems.forEach(item => item.classList.remove('selected'));
-    if(!el) return;
-    const idx = layers.findIndex(l => l === el);
-    if(idx === -1) return;
-    const reverseIdx = layers.length - 1 - idx;
-    layerItems[reverseIdx].classList.add('selected');
-  }
+                    const imageMaterial = new THREE.MeshStandardMaterial({
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                    });
+                    mesh = new THREE.Mesh(geometry, imageMaterial);
 
-  // === ZOOM CONTROLS ===
-  function setZoom(level) {
-    zoomLevel = level;
-    canvas.style.transform = `scale(${zoomLevel})`;
-  }
-  function zoomIn() {
-    setZoom(Math.min(zoomLevel + 0.1, 3));
-  }
-  function zoomOut() {
-    setZoom(Math.max(zoomLevel - 0.1, 0.3));
-  }
-  function zoomReset() {
-    setZoom(1);
-  }
+                    const textureLoader = new THREE.TextureLoader();
+                    textureLoader.load(imageUrl, (texture) => {
+                        mesh.material.map = texture;
+                        mesh.material.needsUpdate = true;
+                        
+                        // Adjust aspect ratio by scaling
+                        const aspectRatio = texture.image.width / texture.image.height;
+                        mesh.scale.x = mesh.scale.y * aspectRatio;
+                        
+                        // If this is the currently selected object, update the inspector
+                        if (selectedObject === mesh) {
+                            updateInspector();
+                        }
+                    });
+                    break;
+                }
+            }
 
-  const zoomControls = document.createElement('div');
-  zoomControls.id = 'zoom-controls';
-  zoomControls.innerHTML = `
-    <button title="Zoom Out">➖</button>
-    <button title="Reset Zoom">⭯</button>
-    <button title="Zoom In">➕</button>
-  `;
-  layersPanel.appendChild(zoomControls);
-  zoomControls.children[0].onclick = zoomOut;
-  zoomControls.children[1].onclick = zoomReset;
-  zoomControls.children[2].onclick = zoomIn;
-
-  // === FIXED EXPORT PNG FUNCTION ===
-  document.getElementById('btn-export-png').addEventListener('click', async () => {
-    const rect = canvas.getBoundingClientRect();
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-
-    const offscreen = document.createElement('canvas');
-    offscreen.width = width;
-    offscreen.height = height;
-    const ctx = offscreen.getContext('2d');
-
-    // Fill background
-    ctx.fillStyle = '#14141a';
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw all elements in layer order
-    for(let el of layers) {
-      await drawElementToCanvas(ctx, el);
-    }
-
-    const dataURL = offscreen.toDataURL('image/png');
-
-    const a = document.createElement('a');
-    a.href = dataURL;
-    a.download = 'editIQ-export.png';
-    a.click();
-  });
-
-  // === COMPLETELY REWRITTEN DRAW FUNCTION ===
-  async function drawElementToCanvas(ctx, el) {
-    const x = parseInt(el.style.left) || 0;
-    const y = parseInt(el.style.top) || 0;
-    const w = el.offsetWidth;
-    const h = el.offsetHeight;
-    
-    // Parse all transforms
-    const transform = el.style.transform || '';
-    const rotateZMatch = transform.match(/rotateZ$$([^)]+)$$/);
-    const rotateXMatch = transform.match(/rotateX$$([^)]+)$$/);
-    const rotateYMatch = transform.match(/rotateY$$([^)]+)$$/);
-    const scaleXMatch = transform.match(/scaleX$$([^)]+)$$/);
-    const scaleYMatch = transform.match(/scaleY$$([^)]+)$$/);
-    
-    const rotationZ = rotateZMatch ? parseFloat(rotateZMatch[1]) * Math.PI / 180 : 0;
-    const rotationX = rotateXMatch ? parseFloat(rotateXMatch[1]) * Math.PI / 180 : 0;
-    const rotationY = rotateYMatch ? parseFloat(rotateYMatch[1]) * Math.PI / 180 : 0;
-    const scaleX = scaleXMatch ? parseFloat(scaleXMatch[1]) : 1;
-    const scaleY = scaleYMatch ? parseFloat(scaleYMatch[1]) : 1;
-
-    // Parse opacity
-    const elementOpacity = parseFloat(el.style.opacity) || 1;
-
-    // Parse border
-    const borderMatch = (el.style.border || '').match(/(\d+)px\s+(\w+)\s+(#?\w+)/);
-    const borderWidth = borderMatch ? parseInt(borderMatch[1]) : 0;
-    const borderColor = borderMatch ? borderMatch[3] : '#00ffff';
-    const borderRadius = parseInt(el.style.borderRadius) || 0;
-
-    // Parse shadow
-    const shadowMatch = (el.style.boxShadow || '').match(/(-?\d+)px\s+(-?\d+)px\s+(\d+)px\s+(#?\w+)/);
-    const shadowX = shadowMatch ? parseInt(shadowMatch[1]) : 0;
-    const shadowY = shadowMatch ? parseInt(shadowMatch[2]) : 0;
-    const shadowBlur = shadowMatch ? parseInt(shadowMatch[3]) : 0;
-    const shadowColor = shadowMatch ? shadowMatch[4] : '#000000';
-
-    // Parse filters
-    const filterStr = el.style.filter || '';
-    const brightness = getFilterValue(filterStr, 'brightness', 1);
-    const contrast = getFilterValue(filterStr, 'contrast', 1);
-    const saturate = getFilterValue(filterStr, 'saturate', 1);
-    const blur = getFilterValue(filterStr, 'blur', 0);
-    const hueRotate = getFilterValue(filterStr, 'hue-rotate', 0);
-
-    ctx.save();
-
-    // Apply global opacity
-    ctx.globalAlpha = elementOpacity;
-
-    // Move to element center for transforms
-    ctx.translate(x + w/2, y + h/2);
-    
-    // Apply 2D rotation and scaling (3D rotations are approximated)
-    ctx.rotate(rotationZ);
-    ctx.scale(scaleX, scaleY);
-    
-    // Move back to top-left corner
-    ctx.translate(-w/2, -h/2);
-
-    // Apply filters (limited canvas support)
-    if (blur > 0) {
-      ctx.filter = `blur(${blur}px)`;
-    }
-
-    // Draw shadow first
-    if (shadowX !== 0 || shadowY !== 0 || shadowBlur > 0) {
-      ctx.save();
-      ctx.shadowColor = shadowColor;
-      ctx.shadowOffsetX = shadowX;
-      ctx.shadowOffsetY = shadowY;
-      ctx.shadowBlur = shadowBlur;
-      
-      // Draw a shadow shape
-      if (el.dataset.type === 'shape') {
-        ctx.fillStyle = el.style.backgroundColor || '#00ffff';
-        if (borderRadius > 0) {
-          drawRoundedRect(ctx, 0, 0, w, h, borderRadius);
-          ctx.fill();
-        } else {
-          ctx.fillRect(0, 0, w, h);
+            if(mesh) {
+                scene.add(mesh);
+                sceneObjects.push(mesh);
+                selectObject(mesh);
+                pushHistoryState(); // Add creation to history
+            }
         }
-      } else if (el.dataset.type === 'text') {
-        ctx.fillStyle = el.style.color || '#00ffff';
-        ctx.font = `${el.style.fontWeight || 'normal'} ${el.style.fontStyle || 'normal'} ${el.style.fontSize || '20px'} ${el.style.fontFamily || 'Orbitron'}`;
-        ctx.textBaseline = 'top';
-        ctx.fillText(el.textContent, 0, 0);
-      }
-      ctx.restore();
-    }
-
-    // Draw the actual element
-    if (el.dataset.type === 'text') {
-      ctx.fillStyle = el.style.color || '#00ffff';
-      ctx.font = `${el.style.fontWeight || 'normal'} ${el.style.fontStyle || 'normal'} ${el.style.fontSize || '20px'} ${el.style.fontFamily || 'Orbitron'}`;
-      ctx.textBaseline = 'top';
-      
-      // Apply text alignment
-      const textAlign = el.style.textAlign || 'left';
-      if (textAlign === 'center') {
-        ctx.textAlign = 'center';
-        ctx.fillText(el.textContent, w/2, 0);
-      } else if (textAlign === 'right') {
-        ctx.textAlign = 'right';
-        ctx.fillText(el.textContent, w, 0);
-      } else {
-        ctx.textAlign = 'left';
-        ctx.fillText(el.textContent, 0, 0);
-      }
-      
-      // Apply text decorations
-      if (el.style.textDecoration === 'underline') {
-        const textWidth = ctx.measureText(el.textContent).width;
-        const fontSize = parseInt(el.style.fontSize) || 20;
-        ctx.strokeStyle = el.style.color || '#00ffff';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        let underlineX = 0;
-        if (textAlign === 'center') underlineX = (w - textWidth) / 2;
-        else if (textAlign === 'right') underlineX = w - textWidth;
-        ctx.moveTo(underlineX, fontSize + 2);
-        ctx.lineTo(underlineX + textWidth, fontSize + 2);
-        ctx.stroke();
-      }
-    }
-    else if (el.dataset.type === 'shape') {
-      // Draw background
-      if (el.style.backgroundColor && el.style.backgroundColor !== 'transparent') {
-        ctx.fillStyle = el.style.backgroundColor;
-        if (borderRadius > 0) {
-          drawRoundedRect(ctx, 0, 0, w, h, borderRadius);
-          ctx.fill();
-        } else {
-          ctx.fillRect(0, 0, w, h);
+        
+        function updateTextGeometry() {
+             if (!selectedObject || !selectedObject.userData.isText) return;
+             const userData = selectedObject.userData;
+             userData.fontSize = parseFloat(fontSizeSlider.value);
+             userData.extrusion = parseFloat(extrusionSlider.value);
+             
+             const newGeometry = new TextGeometry(userData.text, {
+                font: defaultFont,
+                size: userData.fontSize,
+                height: userData.extrusion,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 0.03 * userData.fontSize,
+                bevelSize: 0.02 * userData.fontSize,
+                bevelOffset: 0,
+                bevelSegments: 5
+             });
+             newGeometry.center();
+             selectedObject.geometry.dispose();
+             selectedObject.geometry = newGeometry;
         }
-      }
-    }
-    else if (el.dataset.type === 'image') {
-      const img = el.querySelector('img');
-      if (img && img.complete && img.naturalWidth > 0) {
-        try {
-          // Create a new image to avoid CORS issues
-          const canvasImg = new Image();
-          canvasImg.crossOrigin = 'anonymous';
-          
-          await new Promise((resolve, reject) => {
-            canvasImg.onload = resolve;
-            canvasImg.onerror = reject;
-            canvasImg.src = img.src;
-          });
-          
-          if (borderRadius > 0) {
-            ctx.save();
-            drawRoundedRect(ctx, 0, 0, w, h, borderRadius);
-            ctx.clip();
-          }
-          
-          ctx.drawImage(canvasImg, 0, 0, w, h);
-          
-          if (borderRadius > 0) {
-            ctx.restore();
-          }
-        } catch (e) {
-          // Fallback: draw a placeholder rectangle
-          ctx.fillStyle = '#333';
-          ctx.fillRect(0, 0, w, h);
-          ctx.fillStyle = '#fff';
-          ctx.font = '14px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('Image', w/2, h/2);
+
+        // --- Camera Controls ---
+        function setCameraView(x, y, z) {
+            camera.position.set(x, y, z);
+            camera.lookAt(0, 0, 0);
         }
-      }
-    }
-    else if (el.dataset.type === 'video') {
-      const video = el.querySelector('video');
-      if (video && video.readyState >= 2) {
-        try {
-          if (borderRadius > 0) {
-            ctx.save();
-            drawRoundedRect(ctx, 0, 0, w, h, borderRadius);
-            ctx.clip();
-          }
-          
-          ctx.drawImage(video, 0, 0, w, h);
-          
-          if (borderRadius > 0) {
-            ctx.restore();
-          }
-        } catch (e) {
-          // Fallback: draw a placeholder rectangle
-          ctx.fillStyle = '#333';
-          ctx.fillRect(0, 0, w, h);
-          ctx.fillStyle = '#fff';
-          ctx.font = '14px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('Video', w/2, h/2);
+
+        // --- History Management ---
+        function captureState(object) {
+            if (!object) return null;
+            const state = {
+                uuid: object.uuid,
+                position: object.position.clone(),
+                rotation: object.rotation.clone(),
+                scale: object.scale.clone(),
+                material: object.material.clone(),
+            };
+            if (object.userData.isText) {
+                 state.userData = JSON.parse(JSON.stringify(object.userData));
+            }
+            return state;
         }
-      } else {
-        // Video not ready, draw placeholder
-        ctx.fillStyle = '#333';
-        ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = '#fff';
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Video', w/2, h/2);
-      }
-    }
 
-    // Draw border
-    if (borderWidth > 0) {
-      ctx.strokeStyle = borderColor;
-      ctx.lineWidth = borderWidth;
-      if (borderRadius > 0) {
-        drawRoundedRect(ctx, borderWidth/2, borderWidth/2, w - borderWidth, h - borderWidth, borderRadius);
-        ctx.stroke();
-      } else {
-        ctx.strokeRect(borderWidth/2, borderWidth/2, w - borderWidth, h - borderWidth);
-      }
-    }
+        function applyState(object, state) {
+            if (!object || !state) return;
+            object.position.copy(state.position);
+            object.rotation.copy(state.rotation);
+            object.scale.copy(state.scale);
+            object.material.copy(state.material);
+             if (state.userData && state.userData.isText) {
+                object.userData = JSON.parse(JSON.stringify(state.userData));
+                // We need to rebuild geometry from userData after applying state
+                updateTextGeometry(); 
+            }
+            updateInspector();
+        }
 
-    ctx.restore();
-  }
+        function pushHistoryState() {
+            if (!selectedObject) return;
+            const state = captureState(selectedObject);
+            historyStack.push(state);
+            if (historyStack.length > MAX_HISTORY) {
+                historyStack.shift();
+            }
+            redoStack.length = 0; // Clear redo stack on new action
+        }
+        
+        function undo() {
+            if (historyStack.length <= 1) return; // Keep at least one initial state
+            const currentState = historyStack.pop();
+            redoStack.push(currentState);
 
-  // Helper function to draw rounded rectangles
-  function drawRoundedRect(ctx, x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-  }
+            const prevState = historyStack[historyStack.length - 1];
+            const object = scene.getObjectByProperty('uuid', prevState.uuid);
+            applyState(object, prevState);
+        }
 
-  // === EXPORT MP4 ===
-  document.getElementById('btn-export-mp4').addEventListener('click', async () => {
-    alert("MP4 export is an advanced feature and requires video processing. This demo exports a blank black video using ffmpeg.wasm");
+        function redo() {
+            if (redoStack.length === 0) return;
+            const nextState = redoStack.pop();
+            historyStack.push(nextState);
+            const object = scene.getObjectByProperty('uuid', nextState.uuid);
+            applyState(object, nextState);
+        }
 
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: true });
-    await ffmpeg.load();
+        // --- Export Functions ---
+        function exportGLTF() {
+            const exporter = new GLTFExporter();
+            exporter.parse(
+                scene,
+                function (gltf) {
+                    const output = JSON.stringify(gltf, null, 2);
+                    saveString(output, 'scene.gltf');
+                },
+                function (error) {
+                    console.error('An error happened during parsing', error);
+                },
+                { onlyVisible: true, trs: false, binary: false }
+            );
+        }
+        
+        function exportOBJ() {
+            const exporter = new OBJExporter();
+            const result = exporter.parse(scene);
+            saveString(result, 'scene.obj');
+        }
 
-    const cmd = [
-      '-f', 'lavfi',
-      '-i', 'color=c=black:s=640x360:d=3',
-      '-c:v', 'libx264',
-      '-t', '3',
-      'out.mp4'
-    ];
-    await ffmpeg.run(...cmd);
+        function exportPNG() {
+            const scaleFactor = 4; // Export at 4x resolution for higher quality
+            const originalSize = new THREE.Vector2();
+            renderer.getSize(originalSize);
 
-    const data = ffmpeg.FS('readFile', 'out.mp4');
+            const newWidth = originalSize.width * scaleFactor;
+            const newHeight = originalSize.height * scaleFactor;
 
-    const videoBlob = new Blob([data.buffer], {type: 'video/mp4'});
-    const url = URL.createObjectURL(videoBlob);
+            // Temporarily resize renderer and update camera
+            renderer.setSize(newWidth, newHeight, false);
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            
+            // Render the scene at high resolution
+            renderer.render(scene, camera);
+            const dataURL = renderer.domElement.toDataURL('image/png');
+            
+            // Restore original size
+            renderer.setSize(originalSize.width, originalSize.height, false);
+            camera.aspect = originalSize.width / originalSize.height;
+            camera.updateProjectionMatrix();
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'editIQ-export.mp4';
-    a.click();
+            saveData(dataURL, 'maxEdit-export.png');
+        }
+        
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        document.body.appendChild(link);
 
-    URL.revokeObjectURL(url);
-  });
+        function save(blob, filename) {
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+        
+        function saveString(text, filename) {
+            save(new Blob([text], {type: 'text/plain'}), filename);
+        }
 
-  // === THEME SWITCHER ===
-  themeSwitcher.addEventListener('change', e => {
-    document.body.classList.remove('theme-purple', 'theme-red');
-    if(e.target.value !== 'default') {
-      document.body.classList.add('theme-' + e.target.value);
-    }
-  });
+        function saveData(data, filename) {
+             link.href = data;
+             link.download = filename;
+             link.click();
+        }
 
-  // Initialize
-  setZoom(1);
-  updateUndoRedoButtons();
-  updateValueDisplays();
-  saveState();
 
-</script>
+        // --- Initialize ---
+        init();
 
+    </script>
 </body>
 </html>
+
