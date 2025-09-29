@@ -125,28 +125,28 @@
 
     <!-- UI Panels -->
     <!-- Top Header -->
-    <header class="ui-panel absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-2 z-10">
+    <header class="ui-panel absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 md:gap-4 px-4 md:px-6 py-2 z-10 whitespace-nowrap">
         <h1 class="text-base md:text-lg font-bold tracking-wider">max<span class="text-purple-400">Edit</span></h1>
         <div class="h-6 w-px bg-white/10"></div>
-        <div class="flex items-center gap-2">
-            <button id="export-gltf" class="btn text-xs px-3 py-1 rounded-md">Export GLTF</button>
-            <button id="export-obj" class="btn text-xs px-3 py-1 rounded-md">Export OBJ</button>
-            <button id="export-png" class="btn text-xs px-3 py-1 rounded-md">Export Image</button>
+        <div class="flex items-center gap-1 md:gap-2">
+            <button id="export-gltf" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Export GLTF</button>
+            <button id="export-obj" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Export OBJ</button>
+            <button id="export-png" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Export Image</button>
         </div>
     </header>
     
     <!-- Main Toolbar -->
-    <div id="main-toolbar" class="ui-panel absolute top-20 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 z-10">
-        <button id="add-cube" class="btn icon-btn p-2 rounded-lg" title="Add Cube">
+    <div id="main-toolbar" class="ui-panel absolute top-20 left-1/2 -translate-x-1/2 flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 z-10">
+        <button id="add-cube" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Add Cube">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" /></svg>
         </button>
-        <button id="add-sphere" class="btn icon-btn p-2 rounded-lg" title="Add Sphere">
+        <button id="add-sphere" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Add Sphere">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12.75 19.5v-.75a7.5 7.5 0 00-7.5-7.5H4.5m0-6.75h.75c7.28 0 13.25 5.97 13.25 13.25v.75" /></svg>
         </button>
-        <button id="add-text" class="btn icon-btn p-2 rounded-lg" title="Add Text">
+        <button id="add-text" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Add Text">
            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.625 5.5h4.75a.875.875 0 0 1 0 1.75h-1.5v9.375a.875.875 0 0 1-1.75 0V7.25h-1.5a.875.875 0 0 1 0-1.75Z"/></svg>
         </button>
-        <button id="add-image" class="btn icon-btn p-2 rounded-lg" title="Add Image Plane">
+        <button id="add-image" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Add Image Plane">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
@@ -155,17 +155,17 @@
 
         <div class="h-6 w-px bg-white/10 mx-2"></div>
 
-        <button id="tool-move" class="btn icon-btn p-2 rounded-lg active" title="Move (W)">
+        <button id="tool-move" class="btn icon-btn p-1 md:p-2 rounded-lg active" title="Move (W)">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 17.25h7.5m-7.5-3.5h7.5m-1.5-6.75l-3.75-3.75-3.75 3.75m6.25 10.5l-3.75 3.75-3.75-3.75M6 12l-3.75 3.75L6 19.5m12-7.5l3.75 3.75L18 19.5" /></svg>
         </button>
-        <button id="tool-rotate" class="btn icon-btn p-2 rounded-lg" title="Rotate (E)">
+        <button id="tool-rotate" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Rotate (E)">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>
         </button>
-        <button id="tool-scale" class="btn icon-btn p-2 rounded-lg" title="Scale (R)">
+        <button id="tool-scale" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Scale (R)">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
         </button>
         <div class="h-6 w-px bg-white/10 mx-2"></div>
-         <button id="tool-delete" class="btn icon-btn p-2 rounded-lg text-red-400 hover:text-red-300" title="Delete (Del)">
+         <button id="tool-delete" class="btn icon-btn p-1 md:p-2 rounded-lg text-red-400 hover:text-red-300" title="Delete (Del)">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
         </button>
     </div>
@@ -281,21 +281,21 @@
     </div>
 
     <!-- Bottom Bar: History & Camera -->
-     <div class="ui-panel absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2">
+     <div class="ui-panel absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 whitespace-nowrap">
         <!-- History -->
-        <button id="undo-btn" class="btn icon-btn p-2 rounded-lg" title="Undo">
+        <button id="undo-btn" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Undo">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
         </button>
-        <button id="redo-btn" class="btn icon-btn p-2 rounded-lg" title="Redo">
+        <button id="redo-btn" class="btn icon-btn p-1 md:p-2 rounded-lg" title="Redo">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" /></svg>
         </button>
         <div class="h-6 w-px bg-white/10 mx-2"></div>
         <!-- Camera Presets -->
-        <button id="cam-front" class="btn text-xs px-3 py-1 rounded-md">Front</button>
-        <button id="cam-top" class="btn text-xs px-3 py-1 rounded-md">Top</button>
-        <button id="cam-side" class="btn text-xs px-3 py-1 rounded-md">Side</button>
-        <button id="cam-iso" class="btn text-xs px-3 py-1 rounded-md">Isometric</button>
-        <button id="cam-reset" class="btn text-xs px-3 py-1 rounded-md">Reset</button>
+        <button id="cam-front" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Front</button>
+        <button id="cam-top" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Top</button>
+        <button id="cam-side" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Side</button>
+        <button id="cam-iso" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Isometric</button>
+        <button id="cam-reset" class="btn text-xs px-2 md:px-3 py-1 rounded-md">Reset</button>
      </div>
 
 
